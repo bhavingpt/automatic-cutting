@@ -1,1 +1,3 @@
 pycortex/
+*.asc
+__pycache__/
