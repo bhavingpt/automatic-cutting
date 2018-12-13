@@ -1,5 +1,6 @@
 import cortex
 import nibabel
+import numpy
 
 import os, sys
 import subprocess
@@ -65,13 +66,10 @@ def find_match(target_subject, surface, subjects, points, target_file):
                "--trg_type", "curv"])
 
         locations = nibabel.freesurfer.read_morph_data(target_surf_dir + hemisphere + ".cut_transformed")
-        print(len(locations))
-        for loc in locations:
-            if loc != 0:
-                print(loc)
-        exit(0)
+        estimates.append(numpy.argmax(locations))
 
     # TODO return center of mass
+    return 0
 
 ############################################################
 

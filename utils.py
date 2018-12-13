@@ -187,32 +187,43 @@ def approximate(segments, subject, hemi, style="inflated"):
     surface = cortex.polyutils.Surface(pts, polys)
 
     seams, walls = get_ends(direc, segments)
-    saved = []
 
-    print("Finding geodesic paths...")
+    os.chdir(direc)
+    os.system("rm -rf *.asc")
+
+    # handle the cuts
     for i, seam in enumerate(seams):
-        saved.extend(seam)
+        # write out the cuts asc files
+        for j in range(1, segments + 1):
+            data = [0 for i in range(len(pts))]
+            data[seam[j]] = 1
+            with open("cut" + str(i) + "_" + str(j) + ".asc", "w+") as f:
+                inds = range(len(data))
+                for ind, (x, y, z), d in zip(inds, pts, data):
+                    f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
+
+        # visualize the cuts
         for j in range(segments):
             path = cortex.polyutils.Surface.geodesic_path(surface, seam[j], seam[j+1])
             obj[path] = 3 + i
 
+    # handle the walls
     for i, wall in enumerate(walls):
-        saved.extend(wall)
+        # write out the walls asc files
+        for j in range(1, segments + 1):
+            data = [0 for i in range(len(pts))]
+            data[wall[j]] = 1
+            with open("wall" + str(i) + "_" + str(j) + ".asc", "w+") as f:
+                inds = range(len(data))
+                for ind, (x, y, z), d in zip(inds, pts, data):
+                    f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
+
+        # visualize the walls
         for j in range(segments):
             path = cortex.polyutils.Surface.geodesic_path(surface, wall[j], wall[j+1])
             obj[path] = 3 + i + len(seams)
 
-    os.system("rm cuts.asc") 
-
-    # transform black magic
-    transform = cortex.db.SJ.transforms['20180414SJ_auto4'].coord
-    t = cortex.xfm.Transform(transform.xfm, transform.reference)
-
-    data = [1 if i in saved else 0 for i in range(len(pts))]
-    with open("cuts.asc", "w+") as f:
-        inds = range(len(data))
-        for ind, (x, y, z), d in zip(inds, pts, data):
-            f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
-        
+    os.chdir("..")
+   
     return v
 
