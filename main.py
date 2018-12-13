@@ -39,20 +39,31 @@ def parse_reference(hemi):
 
     return subjects, min(usable_points)
 
+def find_match(surface, subjects, points, target):
+    pass # TODO some center of mass stuff
+
 ############################################################
 
 def autocut(subject, hemisphere):
     subjects, points = parse_reference(hemisphere)
     v = cortex.Vertex.empty(subject)
+    hemi = v.left if hemisphere == "lh" else v.right
+    pts, polys = cortex.db.get_surf(subject, "inflated", hemisphere)
+    surface = cortex.polyutils.Surface(pts, polys)
+    
+    todos = ["cut1_", "cut2_", "cut3_", "cut4_", "cut5_",
+             "wall1_", "wall2_", "wall3_", "wall4_", "wall5_"]
 
-    # calculate and add the cuts
-    for i in range(1, 6):
-        pass
+    # calculate and add cuts and walls
+    for idx, base in enumerate(todos):
+        segements = []
+        for i in range(1, points + 1):
+            segments.append( find_match(surface, subjects, points, base + str(i) + ".asc") )
+        for i in range(points - 1):
+            path = cortex.polyutils.Surface.geodesic_path(surface, segments[i], segments[i+1])
+            obj[path] = idx + 1
 
-    # calculate and add the walls
-    for i in range(1, 6):
-        pass
-
+    cortex.webshow(v)
 
 def main():
     autocut(sys.argv[1], sys.argv[2])
