@@ -1,5 +1,8 @@
 import cortex
+import nibabel
+
 import os, sys
+import subprocess
 
 # regenerate the reference directory for a subject
 def generate(subject, hemisphere, points):
@@ -39,8 +42,36 @@ def parse_reference(hemi):
 
     return subjects, min(usable_points)
 
-def find_match(surface, subjects, points, target):
-    pass # TODO some center of mass stuff
+def find_match(target_subject, surface, subjects, points, target_file):
+    target_file = "real.asc" # TODO remove, just for testing
+    target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
+    estimates = []
+
+    for subj_id in subjects:
+        subj, hemisphere = subj_id.split("-")
+        subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subj + "/surf/"
+
+        subprocess.call(["mris_convert", "-c",
+               "./" + subj_id + "/" + target_file, 
+               subj_surf_dir + hemisphere + ".white",
+               "cut_converted"])
+
+        subprocess.call(["mri_surf2surf", 
+               "--srcsubject", subj,
+               "--srcsurfval", subj_surf_dir + hemisphere + ".cut_converted",
+               "--trgsubject", target_subject,
+               "--trgsurfval", hemisphere + ".cut_transformed",
+               "--hemi", hemisphere,
+               "--trg_type", "curv"])
+
+        locations = nibabel.freesurfer.read_morph_data(target_surf_dir + hemisphere + ".cut_transformed")
+        print(len(locations))
+        for loc in locations:
+            if loc != 0:
+                print(loc)
+        exit(0)
+
+    # TODO return center of mass
 
 ############################################################
 
@@ -56,9 +87,9 @@ def autocut(subject, hemisphere):
 
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
-        segements = []
+        segments = []
         for i in range(1, points + 1):
-            segments.append( find_match(surface, subjects, points, base + str(i) + ".asc") )
+            segments.append( find_match(subject, surface, subjects, points, base + str(i) + ".asc") )
         for i in range(points - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, segments[i], segments[i+1])
             obj[path] = idx + 1
