@@ -44,9 +44,10 @@ def parse_reference(hemi):
     return subjects, min(usable_points)
 
 def find_match(target_subject, surface, subjects, points, target_file):
-    target_file = "real.asc" # TODO remove, just for testing
     target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
     estimates = []
+
+    FNULL = open(os.devnull, 'w')
 
     for subj_id in subjects:
         subj, hemisphere = subj_id.split("-")
@@ -55,7 +56,7 @@ def find_match(target_subject, surface, subjects, points, target_file):
         subprocess.call(["mris_convert", "-c",
                "./" + subj_id + "/" + target_file, 
                subj_surf_dir + hemisphere + ".white",
-               "cut_converted"])
+               "cut_converted"], stdout = FNULL, stderr = subprocess.STDOUT)
 
         subprocess.call(["mri_surf2surf", 
                "--srcsubject", subj,
@@ -63,13 +64,12 @@ def find_match(target_subject, surface, subjects, points, target_file):
                "--trgsubject", target_subject,
                "--trgsurfval", hemisphere + ".cut_transformed",
                "--hemi", hemisphere,
-               "--trg_type", "curv"])
+               "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
 
         locations = nibabel.freesurfer.read_morph_data(target_surf_dir + hemisphere + ".cut_transformed")
         estimates.append(numpy.argmax(locations))
 
-    # TODO return center of mass
-    return 0
+    return estimates[0]
 
 ############################################################
 
@@ -87,10 +87,10 @@ def autocut(subject, hemisphere):
     for idx, base in enumerate(todos):
         segments = []
         for i in range(1, points + 1):
-            segments.append( find_match(subject, surface, subjects, points, base + str(i) + ".asc") )
+            segments.append(find_match(subject, surface, subjects, points, base + str(i) + ".asc"))
         for i in range(points - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, segments[i], segments[i+1])
-            obj[path] = idx + 1
+            hemi[path] = idx + 1
 
     cortex.webshow(v)
 

@@ -197,7 +197,7 @@ def approximate(segments, subject, hemi, style="inflated"):
         for j in range(1, segments + 1):
             data = [0 for i in range(len(pts))]
             data[seam[j]] = 1
-            with open("cut" + str(i) + "_" + str(j) + ".asc", "w+") as f:
+            with open("cut" + str(i + 1) + "_" + str(j) + ".asc", "w+") as f:
                 inds = range(len(data))
                 for ind, (x, y, z), d in zip(inds, pts, data):
                     f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
@@ -213,7 +213,7 @@ def approximate(segments, subject, hemi, style="inflated"):
         for j in range(1, segments + 1):
             data = [0 for i in range(len(pts))]
             data[wall[j]] = 1
-            with open("wall" + str(i) + "_" + str(j) + ".asc", "w+") as f:
+            with open("wall" + str(i + 1) + "_" + str(j) + ".asc", "w+") as f:
                 inds = range(len(data))
                 for ind, (x, y, z), d in zip(inds, pts, data):
                     f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
