@@ -85,6 +85,7 @@ def autocut(subject, hemisphere):
 
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
+        print("Calculating " + base[:-1])
         segments = []
         for i in range(1, points + 1):
             segments.append(find_match(subject, surface, subjects, points, base + str(i) + ".asc"))
