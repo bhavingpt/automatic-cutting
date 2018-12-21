@@ -8,12 +8,13 @@ import utils
 
 # regenerate the reference directory for a subject
 def generate(subject, hemisphere, points):
+    my_id = subject + "-" + hemisphere
     seams, walls, pts = utils.approximate(points - 1, subject, hemisphere)
 
     for x in os.walk("."):
-        subdirs = [y for y in x[1] if y.endswith("-" + hemi)]
+        subdirs = [y for y in x[1] if y.endswith("-" + hemisphere) and y != my_id]
         if len(subdirs) == 0:
-            utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1)
+            utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
             return
 
     reference = subdirs[0]
@@ -22,10 +23,10 @@ def generate(subject, hemisphere, points):
     for idx in range(5):
         with open(reference + "/cut" + str(idx) + "_0.asc") as f:
            lines = [x[:-1] for x in f.readlines()]
-               for line in lines:
-                   content = line.split(" ")
-                   if len(content) > 3 and content[-1] != "0.00000":
-                       reference_bases.append(int(content[0]))
+           for line in lines:
+               content = line.split(" ")
+               if len(content) > 3 and content[-1] != "0.00000":
+                   reference_bases.append(int(content[0]))
     
     r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
     r_surf = cortex.polyutils.Surface(r_pts, r_polys)

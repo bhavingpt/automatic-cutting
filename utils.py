@@ -210,8 +210,8 @@ def approximate(segments, subject, hemi, style="inflated"):
 
     cortex.webshow(v)
 
-def generate_asc_files(subject, hemi, seams, walls, segments):
-    direct = subject + '-' + hemi
+def generate_asc_files(subject, hemi, seams, walls, segments, pts):
+    direc = subject + '-' + hemi
 
     os.chdir(direc)
     os.system("rm -rf *.asc")
