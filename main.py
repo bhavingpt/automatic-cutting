@@ -1,5 +1,5 @@
 import cortex
-import nibabel
+import nibabel as nib
 import numpy
 
 import os, sys
@@ -8,7 +8,7 @@ import utils
 
 # regenerate the reference directory for a subject
 def generate(subject, hemisphere, points):
-    seams, walls = utils.approximate(points - 1, subject, hemisphere)
+    seams, walls, pts = utils.approximate(points - 1, subject, hemisphere)
 
     for x in os.walk("."):
         subdirs = [y for y in x[1] if y.endswith("-" + hemi)]
@@ -27,13 +27,45 @@ def generate(subject, hemisphere, points):
                    if len(content) > 3 and content[-1] != "0.00000":
                        reference_bases.append(int(content[0]))
 
+    reference = reference.split("-")[0]
+    ref_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + reference + "/surf/"
+
     correspondence = dict() # will store the mapping from old base to new one
 
     for idx in range(5):
         base = seam[idx]
-        # TODO create a file with this point as 1
-        # TODO mutate it to match the reference's stuff
+
+        data = [0 for _ in range(len(pts))]
+        data[base] = 1
+        with open("temp.asc", "w+") as f:
+            inds = range(len(data))
+            for ind, (x, y, x), d in zip(inds, pts, data):
+                f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
+
+        FNULL = open(os.devnull, 'w')
+        subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/"
+
+        subprocess.call(["mris_convert", "-c",
+               "temp.asc",
+               subj_surf_dir + hemisphere + ".white",
+               "temp_converted"], stdout = FNULL, stderr = subprocess.STDOUT)
+
+        subprocess.call(["mri_surf2surf",
+               "--srcsubject", subject,
+               "--srcsurfval", subj_surf_dir + hemisphere + ".temp_converted",
+               "--trgsubject", reference,
+               "--trgsurfval", hemisphere + ".temp_transformed",
+               "--hemi", hemisphere,
+               "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
+
+        locations = nib.freesurfer.read_morph_data(ref_surf_dir + hemisphere + ".temp_transformed")
+
+        base_transformed = numpy.argmax(locations)
         # TODO figure out which of reference bases it matches closest
+
+        # TODO put that in correspondence
+
+        os.system("rm temp.asc")
 
     # reorder the seams and walls according to the dictionary
     new_seams = [[], [], [], [], []]
@@ -112,7 +144,7 @@ def find_match(target_subject, surface, subjects, points, target_file):
                "--hemi", hemisphere,
                "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
 
-        locations = nibabel.freesurfer.read_morph_data(target_surf_dir + hemisphere + ".cut_transformed")
+        locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + ".cut_transformed")
         estimates.append(numpy.argmax(locations))
 
     print("    Output point: " + str(estimates[0]))

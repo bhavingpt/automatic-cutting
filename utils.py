@@ -196,7 +196,7 @@ def approximate(segments, subject, hemi, style="inflated"):
 
     seams, walls = get_ends(direc, segments)
 
-    return seams, walls
+    return seams, walls, pts
 
     # visualize the cuts
     for j in range(segments):
