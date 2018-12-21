@@ -31,15 +31,18 @@ def parse_reference(hemi):
 
     calc = [calc_points(subject) for subject in subdirs]
     subjects = []
-    usable_points = []
+    usable = []
 
     for i in range(len(subdirs)):
         if calc[i] != -1:
             subjects.append(subdirs[i]) 
-            usable_points.append(calc[i])
+            usable.append(calc[i])
 
     if len(subjects) == 0:
         raise Exception("No valid references found!")
+
+    points = max(usable, key=usable.count)
+    searchdirs = [subjects[i] for i in range(len(subjects)) if usable[i] == points]
 
     return subjects, min(usable_points)
 
