@@ -203,7 +203,7 @@ def approximate(segments, subject, hemi, style="inflated"):
     for i, seam in enumerate(seams):
         # write out the cuts asc files
         for j in range(0, segments + 1):
-            data = [0 for i in range(len(pts))]
+            data = [0 for _ in range(len(pts))]
             data[seam[j]] = 1
             with open("cut" + str(i + 1) + "_" + str(j) + ".asc", "w+") as f:
                 inds = range(len(data))
@@ -219,7 +219,7 @@ def approximate(segments, subject, hemi, style="inflated"):
     for i, wall in enumerate(walls):
         # write out the walls asc files
         for j in range(0, segments + 1):
-            data = [0 for i in range(len(pts))]
+            data = [0 for _ in range(len(pts))]
             data[wall[j]] = 1
             with open("wall" + str(i + 1) + "_" + str(j) + ".asc", "w+") as f:
                 inds = range(len(data))
