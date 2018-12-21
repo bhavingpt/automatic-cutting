@@ -218,7 +218,7 @@ def approximate(segments, subject, hemi, style="inflated"):
     # handle the walls
     for i, wall in enumerate(walls):
         # write out the walls asc files
-        for j in range(1, segments + 1):
+        for j in range(0, segments + 1):
             data = [0 for i in range(len(pts))]
             data[wall[j]] = 1
             with open("wall" + str(i + 1) + "_" + str(j) + ".asc", "w+") as f:
