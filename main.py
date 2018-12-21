@@ -52,6 +52,13 @@ def find_match(target_subject, surface, subjects, points, target_file):
     for subj_id in subjects:
         subj, hemisphere = subj_id.split("-")
         subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subj + "/surf/"
+        
+        with open(subj_id + "/" + target_file) as f:
+            lines = [x[:-1] for x in f.readlines()]
+            for line in lines:
+                content = line.split(" ")
+                if len(content) > 3 and content[-1] != "0.00000":
+                    print("Input point: " + content[0])
 
         subprocess.call(["mris_convert", "-c",
                "./" + subj_id + "/" + target_file, 
@@ -69,6 +76,7 @@ def find_match(target_subject, surface, subjects, points, target_file):
         locations = nibabel.freesurfer.read_morph_data(target_surf_dir + hemisphere + ".cut_transformed")
         estimates.append(numpy.argmax(locations))
 
+    print("    Output point: " + str(estimates[0]))
     return estimates[0]
 
 ############################################################
@@ -87,7 +95,7 @@ def autocut(subject, hemisphere):
     for idx, base in enumerate(todos):
         print("Calculating " + base[:-1])
         segments = []
-        for i in range(1, points + 1):
+        for i in range(0, points):
             segments.append(find_match(subject, surface, subjects, points, base + str(i) + ".asc"))
         for i in range(points - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, segments[i], segments[i+1])

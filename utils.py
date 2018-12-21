@@ -159,6 +159,11 @@ def get_ends(direc, segments):
         seam_landmarks.append(landmarks)
 
     bases = generate_bases(seam_landmarks, medial_wall)
+
+    for descriptor in seam_landmarks:
+        if descriptor[0] not in bases:
+            descriptor.reverse()
+
     walls = separate_wall(surface.graph, medial_wall, bases)
     wall_landmarks = []
     for i in range(len(walls)):
@@ -174,6 +179,9 @@ def get_ends(direc, segments):
             landmarks.append(piece[0])
         landmarks.append(pieces[-1][-1])
         wall_landmarks.append(landmarks)
+
+    for descriptor in wall_landmarks:
+        descriptor.reverse()
 
     return seam_landmarks, wall_landmarks
 
@@ -194,7 +202,7 @@ def approximate(segments, subject, hemi, style="inflated"):
     # handle the cuts
     for i, seam in enumerate(seams):
         # write out the cuts asc files
-        for j in range(1, segments + 1):
+        for j in range(0, segments + 1):
             data = [0 for i in range(len(pts))]
             data[seam[j]] = 1
             with open("cut" + str(i + 1) + "_" + str(j) + ".asc", "w+") as f:
@@ -225,5 +233,6 @@ def approximate(segments, subject, hemi, style="inflated"):
 
     os.chdir("..")
    
+    #cortex.webshow(v)
     return v
 
