@@ -10,9 +10,40 @@ import utils
 def generate(subject, hemisphere, points):
     seams, walls = utils.approximate(points - 1, subject, hemisphere)
 
-    # TODO sort these seams and walls by relevance to the SJ-rh directory
+    for x in os.walk("."):
+        subdirs = [y for y in x[1] if y.endswith("-" + hemi)]
+        if len(subdirs) == 0:
+            utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1)
+            return
 
-    utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1)
+    reference = subdirs[0]
+    reference_bases = []
+
+    for idx in range(5):
+        with open(reference + "/cut" + str(idx) + "_0.asc") as f:
+           lines = [x[:-1] for x in f.readlines()]
+               for line in lines:
+                   content = line.split(" ")
+                   if len(content) > 3 and content[-1] != "0.00000":
+                       reference_bases.append(int(content[0]))
+
+    correspondence = dict() # will store the mapping from old base to new one
+
+    for idx in range(5):
+        base = seam[idx]
+        # TODO create a file with this point as 1
+        # TODO mutate it to match the reference's stuff
+        # TODO figure out which of reference bases it matches closest
+
+    # reorder the seams and walls according to the dictionary
+    new_seams = [[], [], [], [], []]
+    new_walls = [[], [], [], [], []]
+
+    for idx in range(5):
+        new_seams[correspondence[idx]] = seams[idx]
+        new_walls[correspondence[idx]] = walls[idx]
+         
+    utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1)
 
 ############################################################
 
