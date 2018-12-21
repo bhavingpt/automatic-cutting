@@ -4,10 +4,15 @@ import numpy
 
 import os, sys
 import subprocess
+import utils
 
 # regenerate the reference directory for a subject
 def generate(subject, hemisphere, points):
-    pass
+    seams, walls = utils.approximate(points - 1, subject, hemisphere)
+
+    # TODO sort these seams and walls by relevance to the SJ-rh directory
+
+    utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1)
 
 ############################################################
 

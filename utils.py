@@ -196,6 +196,23 @@ def approximate(segments, subject, hemi, style="inflated"):
 
     seams, walls = get_ends(direc, segments)
 
+    return seams, walls
+
+    # visualize the cuts
+    for j in range(segments):
+        path = cortex.polyutils.Surface.geodesic_path(surface, seam[j], seam[j+1])
+        obj[path] = 3 + i
+
+    # visualize the walls
+    for j in range(segments):
+        path = cortex.polyutils.Surface.geodesic_path(surface, wall[j], wall[j+1])
+        obj[path] = 3 + i + len(seams)
+
+    cortex.webshow(v)
+
+def generate_asc_files(subject, hemi, seams, walls, segments):
+    direct = subject + '-' + hemi
+
     os.chdir(direc)
     os.system("rm -rf *.asc")
 
@@ -210,11 +227,6 @@ def approximate(segments, subject, hemi, style="inflated"):
                 for ind, (x, y, z), d in zip(inds, pts, data):
                     f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
 
-        # visualize the cuts
-        for j in range(segments):
-            path = cortex.polyutils.Surface.geodesic_path(surface, seam[j], seam[j+1])
-            obj[path] = 3 + i
-
     # handle the walls
     for i, wall in enumerate(walls):
         # write out the walls asc files
@@ -226,13 +238,4 @@ def approximate(segments, subject, hemi, style="inflated"):
                 for ind, (x, y, z), d in zip(inds, pts, data):
                     f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
 
-        # visualize the walls
-        for j in range(segments):
-            path = cortex.polyutils.Surface.geodesic_path(surface, wall[j], wall[j+1])
-            obj[path] = 3 + i + len(seams)
-
     os.chdir("..")
-   
-    #cortex.webshow(v)
-    return v
-
