@@ -26,6 +26,9 @@ def generate(subject, hemisphere, points):
                    content = line.split(" ")
                    if len(content) > 3 and content[-1] != "0.00000":
                        reference_bases.append(int(content[0]))
+    
+    r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
+    r_surf = cortex.polyutils.Surface(r_pts, r_polys)
 
     reference = reference.split("-")[0]
     ref_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + reference + "/surf/"
@@ -61,10 +64,11 @@ def generate(subject, hemisphere, points):
         locations = nib.freesurfer.read_morph_data(ref_surf_dir + hemisphere + ".temp_transformed")
 
         base_transformed = numpy.argmax(locations)
-        # TODO figure out which of reference bases it matches closest
 
-        # TODO put that in correspondence
+        dists = r_surf.approx_geodesic_distance(base_transformed)
+        base_dists = [dists[k] for k in reference_bases]
 
+        correspondence[idx] = numpy.argmin(base_dists)
         os.system("rm temp.asc")
 
     # reorder the seams and walls according to the dictionary
