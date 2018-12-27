@@ -6,6 +6,10 @@ import os, sys
 import subprocess
 import utils
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # regenerate the reference directory for a subject
 def generate(subject, hemisphere, points):
     my_id = subject + "-" + hemisphere
