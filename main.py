@@ -126,6 +126,8 @@ def parse_reference(hemi):
 def find_match(target_subject, surface, subjects, points, target_file):
     target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
     estimates = []
+    uuidc = target_file[:-4] + "_converted"
+    uuidt = target_file[:-4] + "_transformed"
 
     FNULL = open(os.devnull, 'w')
 
@@ -143,17 +145,17 @@ def find_match(target_subject, surface, subjects, points, target_file):
         subprocess.call(["mris_convert", "-c",
                "./" + subj_id + "/" + target_file, 
                subj_surf_dir + hemisphere + ".white",
-               "cut_converted"], stdout = FNULL, stderr = subprocess.STDOUT)
+               uuidc], stdout = FNULL, stderr = subprocess.STDOUT)
 
         subprocess.call(["mri_surf2surf", 
                "--srcsubject", subj,
-               "--srcsurfval", subj_surf_dir + hemisphere + ".cut_converted",
+               "--srcsurfval", subj_surf_dir + hemisphere + "." + uuidc,
                "--trgsubject", target_subject,
-               "--trgsurfval", hemisphere + ".cut_transformed",
+               "--trgsurfval", hemisphere + "." + uuidt,
                "--hemi", hemisphere,
                "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
 
-        locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + ".cut_transformed")
+        locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + "." + uuidt)
         estimates.append(numpy.argmax(locations))
 
     print("    Output point: " + str(estimates[0]))
