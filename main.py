@@ -4,15 +4,13 @@ import numpy
 
 import os, sys
 import subprocess
-import utils
+import utils, copy
 
 import multiprocessing
 
 from dotenv import load_dotenv
 
 load_dotenv()
-
-segments = None
 
 # regenerate the reference directory for a subject
 def generate(subject, hemisphere, points):
@@ -127,9 +125,7 @@ def parse_reference(hemi):
 
     return subjects, points
 
-def find_match(target_subject, surface, subjects, points, target_file, seg_idx, cut_idx):
-    global segments
-
+def find_match(target_subject, surface, subjects, points, target_file, ret, seg_idx, cut_idx):
     target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
     estimates = []
     uuidc = target_file[:-4] + "_converted"
@@ -165,14 +161,13 @@ def find_match(target_subject, surface, subjects, points, target_file, seg_idx, 
         estimates.append(numpy.argmax(locations))
 
     print("    Output point: " + str(estimates[0]))
-    segments[seg_idx][cut_idx] = estimates[0]
+    print("        Assigning to " + str(seg_idx) + " " + str(cut_idx))
+    ret[seg_idx][cut_idx] = estimates[0]
     #return estimates[0]
 
 ############################################################
 
 def autocut(subject, hemisphere):
-    global segments
-
     subjects, points = parse_reference(hemisphere)
     v = cortex.Vertex.empty(subject)
     hemi = v.left if hemisphere == "lh" else v.right
@@ -183,7 +178,12 @@ def autocut(subject, hemisphere):
              "wall1_", "wall2_", "wall3_", "wall4_", "wall5_"]
 
     processes = []
-    segments = [[0] * points for i in range(len(todos))]
+    manager = multiprocessing.Manager()
+    segments = manager.dict()
+    segment = [0] * points
+
+    for idx in range(len(todos)):
+        segments[idx] = manager.list(segment)
 
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
@@ -192,7 +192,7 @@ def autocut(subject, hemisphere):
         for i in range(0, points):
             #segments.append(find_match(subject, surface, subjects, points, base + str(i) + ".asc"))
             t = multiprocessing.Process(target=find_match,
-                    args=(subject, surface, subjects, points, base + str(i) + ".asc", idx, i))
+                    args=(subject, surface, subjects, points, base + str(i) + ".asc", segments, idx, i))
             processes.append(t)
             t.start()
         '''
