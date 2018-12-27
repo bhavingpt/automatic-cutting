@@ -117,7 +117,7 @@ def parse_reference(hemi):
     points = max(usable, key=usable.count)
     searchdirs = [subjects[i] for i in range(len(subjects)) if usable[i] == points]
 
-    return subjects, min(usable_points)
+    return subjects, points
 
 def find_match(target_subject, surface, subjects, points, target_file):
     target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
