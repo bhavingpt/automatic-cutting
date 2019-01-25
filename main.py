@@ -175,24 +175,16 @@ def autocut(subject, hemisphere):
     todos = ["cut1_", "cut2_", "cut3_", "cut4_", "cut5_",
              "wall1_", "wall2_", "wall3_", "wall4_", "wall5_"]
 
-    segments = []
+    transforms = []
 
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
-        print("Calculating " + base[:-1])
-        segment = []
         for i in range(0, points):
-            segment.append(find_match(subject, surface, subjects, points, base + str(i) + ".asc"))
-        for i in range(points - 1):
-            path = cortex.polyutils.Surface.geodesic_path(surface, segment[i], segment[i+1])
-            hemi[path] = idx + 1
+            transforms.append((subject, surface, subjects, points, base + str(i) + ".asc"))
 
-        segments.append(segment)
-
-    cortex.webshow(v)
-
-    for s in segments:
-        print(s)
+    with multiprocessing.Pool(processes=len(transforms)) as pool: # TODO process number
+        results = pool.starmap(find_match, transforms)
+    print(results)
 
 def main():
     autocut(sys.argv[1], sys.argv[2])
