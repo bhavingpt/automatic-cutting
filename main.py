@@ -182,7 +182,7 @@ def autocut(subject, hemisphere):
         for i in range(0, points):
             transforms.append((subject, surface, subjects, points, base + str(i) + ".asc"))
 
-    with multiprocessing.Pool(processes=len(transforms)) as pool: # TODO process number
+    with multiprocessing.Pool(processes=len(transforms)) as pool:
         results = pool.starmap(find_match, transforms)
     print(results)
 
