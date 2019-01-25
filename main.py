@@ -125,7 +125,7 @@ def parse_reference(hemi):
 
     return subjects, points
 
-def find_match(target_subject, surface, subjects, points, target_file, ret, seg_idx, cut_idx):
+def find_match(target_subject, surface, subjects, points, target_file):
     target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
     estimates = []
     uuidc = target_file[:-4] + "_converted"
@@ -161,9 +161,7 @@ def find_match(target_subject, surface, subjects, points, target_file, ret, seg_
         estimates.append(numpy.argmax(locations))
 
     print("    Output point: " + str(estimates[0]))
-    print("        Assigning to " + str(seg_idx) + " " + str(cut_idx))
-    ret[seg_idx][cut_idx] = estimates[0]
-    #return estimates[0]
+    return estimates[0]
 
 ############################################################
 
@@ -177,36 +175,24 @@ def autocut(subject, hemisphere):
     todos = ["cut1_", "cut2_", "cut3_", "cut4_", "cut5_",
              "wall1_", "wall2_", "wall3_", "wall4_", "wall5_"]
 
-    processes = []
-    manager = multiprocessing.Manager()
-    segments = manager.dict()
-    segment = [0] * points
-
-    for idx in range(len(todos)):
-        segments[idx] = manager.list(segment)
+    segments = []
 
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
         print("Calculating " + base[:-1])
-        #segments = []
+        segment = []
         for i in range(0, points):
-            #segments.append(find_match(subject, surface, subjects, points, base + str(i) + ".asc"))
-            t = multiprocessing.Process(target=find_match,
-                    args=(subject, surface, subjects, points, base + str(i) + ".asc", segments, idx, i))
-            processes.append(t)
-            t.start()
-        '''
+            segment.append(find_match(subject, surface, subjects, points, base + str(i) + ".asc"))
         for i in range(points - 1):
-            path = cortex.polyutils.Surface.geodesic_path(surface, segments[i], segments[i+1])
+            path = cortex.polyutils.Surface.geodesic_path(surface, segment[i], segment[i+1])
             hemi[path] = idx + 1
 
+        segments.append(segment)
+
     cortex.webshow(v)
-    '''
 
-    for process in processes:
-        process.join()
-
-    print(segments)
+    for s in segments:
+        print(s)
 
 def main():
     autocut(sys.argv[1], sys.argv[2])
