@@ -184,7 +184,18 @@ def autocut(subject, hemisphere):
 
     with multiprocessing.Pool(processes=len(transforms)) as pool:
         results = pool.starmap(find_match, transforms)
-    print(results)
+
+    segments = []
+    idx = 0
+    for base in todos:
+        segment = [base[:-1]]
+        for i in range(0, points):
+            segment.append(results[idx])
+            idx += 1
+        segments.append(segment)
+
+    for s in segments:
+        print(s)
 
 def main():
     autocut(sys.argv[1], sys.argv[2])
