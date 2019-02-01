@@ -163,6 +163,39 @@ def find_match(target_subject, surface, subjects, points, target_file):
     print("    Output point: " + str(estimates[0]))
     return estimates[0]
 
+def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, walls):
+    mwall_edge = set()
+    seam = set()
+
+    for cut in cuts:
+        for i in range(intermeds - 1):
+            path = cortex.polyutils.Surface.geodesic_path(surface, cut[i], cut[i+1])
+            mwall_edge.update(path)
+
+    for wall in walls:
+        for i in range(intermeds - 1):
+            path = cortex.polyutils.Surface.geodesic_path(surface, wall[i], wall[i+1])
+            seam.update(path)
+
+    smore = set()
+    for cut_point in seam:
+        smore.update(surface.graph.neighbors(cut_point))
+        smore.add(cut_point)
+
+    fverts = range(len(subj_pts))
+
+    edges = mwall_edge | (smore - seam)
+    verts = fverts - seam
+    pts = [(v, Vector(subj_pts[v])) for v in verts] # TODO Vector class in Python
+
+    with open(subject + "." + hemisphere + ".patch", "wb") as f:
+        f.write(struct.pack('>2i', -1, len(pts)))
+        for i, pt in pts:
+            if i in edges:
+                f.write(struct.pack('>i3f', -i-1, *pt))
+            else:
+                f.write(struct.pack('>i3f', i+1, *pt))
+
 ############################################################
 
 def autocut(subject, hemisphere):
@@ -199,6 +232,8 @@ def autocut(subject, hemisphere):
         for i in range(points - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, s[i], s[i+1])
             hemi[path] = num + 1
+
+    generate_patch(surface, subject, hemisphere, pts, points, segments[:5], segments[5:])
 
     cortex.webshow(v, open_browser=False)
 
