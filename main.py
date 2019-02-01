@@ -188,14 +188,19 @@ def autocut(subject, hemisphere):
     segments = []
     idx = 0
     for base in todos:
-        segment = [base[:-1]]
+        segment = []
         for i in range(0, points):
             segment.append(results[idx])
             idx += 1
         segments.append(segment)
 
-    for s in segments:
+    for num, s in enumerate(segments):
         print(s)
+        for i in range(points - 1):
+            path = cortex.polyutils.Surface.geodesic_path(surface, s[i], s[i+1])
+            hemi[path] = num + 1
+
+    cortex.webshow(v, open_browser=False)
 
 def main():
     autocut(sys.argv[1], sys.argv[2])
