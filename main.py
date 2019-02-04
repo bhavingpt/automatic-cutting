@@ -2,8 +2,11 @@ import cortex
 import nibabel as nib
 import numpy
 
+import struct
+
 import os, sys
 import subprocess
+import shlex
 import utils, copy
 
 import multiprocessing
@@ -182,19 +185,36 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
         smore.update(surface.graph.neighbors(cut_point))
         smore.add(cut_point)
 
-    fverts = range(len(subj_pts))
+    fverts = set(range(len(subj_pts)))
 
     edges = mwall_edge | (smore - seam)
     verts = fverts - seam
-    pts = [(v, Vector(subj_pts[v])) for v in verts] # TODO Vector class in Python
+    pts = [(v, list(subj_pts[v])) for v in verts]
 
-    with open(subject + "." + hemisphere + ".patch", "wb") as f:
+    patch_filepath = os.environ['SUBJECTS_DIR'] + "/" + subject + "/" + hemisphere + ".autocut.patch"
+    if os.path.exists(patch_filepath):
+        os.remove(patch_filepath)
+    with open(patch_filepath, "wb") as f:
         f.write(struct.pack('>2i', -1, len(pts)))
         for i, pt in pts:
             if i in edges:
                 f.write(struct.pack('>i3f', -i-1, *pt))
             else:
                 f.write(struct.pack('>i3f', i+1, *pt))
+
+    patch = hemisphere + ".autocut.patch"
+
+    inpath = cortex.freesurfer.get_paths(subject, hemi).format(name=patch)
+    outpath = cortex.freesurfer.get_paths(subject, hemi).format(name=patch + ".flat")
+
+    save_every = 1
+    save_every_str = ' -w %d'%save_every
+
+    cmd = "mris_flatten -O fiducial{save_every_str} {inpath} {outpath}".format(inpath=inpath, outpath=outpath, save_every_str=save_every_str)
+
+    print(cmd)
+    
+    subprocess.check_call(shlex.split(cmd))
 
 ############################################################
 
