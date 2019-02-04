@@ -191,7 +191,7 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
     verts = fverts - seam
     pts = [(v, list(subj_pts[v])) for v in verts]
 
-    patch_filepath = os.environ['SUBJECTS_DIR'] + "/" + subject + "/" + hemisphere + ".autocut.patch"
+    patch_filepath = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/" + hemisphere + ".autocut.patch"
     if os.path.exists(patch_filepath):
         os.remove(patch_filepath)
     with open(patch_filepath, "wb") as f:
@@ -202,10 +202,8 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
             else:
                 f.write(struct.pack('>i3f', i+1, *pt))
 
-    patch = hemisphere + ".autocut.patch"
-
-    inpath = cortex.freesurfer.get_paths(subject, hemi).format(name=patch)
-    outpath = cortex.freesurfer.get_paths(subject, hemi).format(name=patch + ".flat")
+    inpath = patch_filepath
+    outpath = inpath + ".flat"
 
     save_every = 1
     save_every_str = ' -w %d'%save_every
