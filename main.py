@@ -174,18 +174,17 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
     for cut in cuts:
         for i in range(intermeds - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, cut[i], cut[i+1])
-            mwall_edge.update(path)
+            seam.update(path)
 
     for wall in walls:
         for i in range(intermeds - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, wall[i], wall[i+1])
-            seam.update(path)
+            mwall_edge.update(path)
 
     smore = set()
     for cut_point in seam:
         smore.update(surface.graph.neighbors(cut_point))
         smore.add(cut_point)
-
 
     all_points = set(range(len(subj_pts)))
     region_a = set()
@@ -199,12 +198,10 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
 
     region_b = all_points - region_a
 
-    print(len(region_b))
-    print(len(region_a))
-
+    mwall_region = min(region_a, region_b, key = len)
     # By this point, all of the vertices and edges are in proper shape
 
-    fverts = set(range(len(subj_pts)))
+    fverts = set(range(len(subj_pts))) - mwall_region
     
     edges = mwall_edge | (smore - seam) # all points in the edge
 
@@ -213,8 +210,6 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
 
     # it looks like this is actually not sufficient - check cortex.freesurfer
     # import_flat calls get_surf, which actually reads pts + polys from smoothwm
-
-    exit(0)
 
     patch_filepath = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/" + hemisphere + ".autocut.patch"
     if os.path.exists(patch_filepath):
