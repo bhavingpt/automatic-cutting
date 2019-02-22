@@ -191,6 +191,16 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
     verts = fverts - seam
     pts = [(v, list(subj_pts[v])) for v in verts]
 
+    for edge in edges:
+        print(edge)
+
+    print(pts[0])
+
+    exit(0)
+    
+
+    # write out the patch file
+
     patch_filepath = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/" + hemisphere + ".autocut.patch"
     if os.path.exists(patch_filepath):
         os.remove(patch_filepath)
