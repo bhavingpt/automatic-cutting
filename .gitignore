@@ -2,3 +2,4 @@ pycortex/
 __pycache__/
 *.asc
 .env
+*.pyc

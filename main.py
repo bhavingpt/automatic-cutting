@@ -145,7 +145,8 @@ def find_match(target_subject, surface, subjects, points, target_file):
             for line in lines:
                 content = line.split(" ")
                 if len(content) > 3 and content[-1] != "0.00000":
-                    print("Input point: " + content[0])
+                    pass
+                    #print("Input point: " + content[0])
 
         subprocess.call(["mris_convert", "-c",
                "./" + subj_id + "/" + target_file, 
@@ -163,7 +164,7 @@ def find_match(target_subject, surface, subjects, points, target_file):
         locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + "." + uuidt)
         estimates.append(numpy.argmax(locations))
 
-    print("    Output point: " + str(estimates[0]))
+    #print("    Output point: " + str(estimates[0]))
     return estimates[0]
 
 def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, walls):
@@ -173,31 +174,40 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
     for cut in cuts:
         for i in range(intermeds - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, cut[i], cut[i+1])
-            mwall_edge.update(path)
+            seam.update(path)
 
     for wall in walls:
         for i in range(intermeds - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, wall[i], wall[i+1])
-            seam.update(path)
+            mwall_edge.update(path)
 
     smore = set()
     for cut_point in seam:
         smore.update(surface.graph.neighbors(cut_point))
         smore.add(cut_point)
 
-    fverts = set(range(len(subj_pts)))
+    all_points = set(range(len(subj_pts)))
+    region_a = set()
 
-    edges = mwall_edge | (smore - seam)
+    queue = [next(iter(all_points))]
+    while len(queue) != 0:
+        current = queue.pop(0)
+        if current not in mwall_edge and current not in region_a:
+            region_a.add(current)
+            queue += list(surface.graph.neighbors(current))
+
+    region_b = all_points - region_a
+
+    mwall_region = min(region_a, region_b, key = len)
+
+    # By this point, all of the vertices and edges are in proper shape
+
+    fverts = set(range(len(subj_pts))) - mwall_region
+    
+    edges = mwall_edge | (smore - seam) # all points in the edge
+
     verts = fverts - seam
     pts = [(v, list(subj_pts[v])) for v in verts]
-
-    for edge in edges:
-        print(edge)
-
-    print(pts[0])
-
-    exit(0)
-    
 
     # write out the patch file
 
@@ -255,8 +265,12 @@ def autocut(subject, hemisphere):
             idx += 1
         segments.append(segment)
 
+    for i in range(6, 10): # add the previous wall's end to the beginning
+        segments[i][0] = segments[i - 1][-1]
+
     for num, s in enumerate(segments):
-        print(s)
+        if num > 4:
+            print(s)
         for i in range(points - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, s[i], s[i+1])
             hemi[path] = num + 1
