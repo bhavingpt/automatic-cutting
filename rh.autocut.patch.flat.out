@@ -1,0 +1,5 @@
+tol=2.0e-01, sigma=0.0, host=unkno, nav=1024, nbrs=2, l_nlarea=1.000, l_dist=1.000
+using quadratic fit line minimization
+3: 12 | 4: 12 | 5: 12 | 6: 12 | 7: 12 | 
+nlarea/dist = 1000000.000
+000: dt: 0.00, sse: 194641.4 (2.323, 78.1, 6.760), neg: 101842 (%42.990:%47.36), avgs: 1024
