@@ -167,25 +167,7 @@ def find_match(target_subject, surface, subjects, points, target_file):
     #print("    Output point: " + str(estimates[0]))
     return estimates[0]
 
-def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, walls):
-    mwall_edge = set()
-    seam = set()
-
-    for cut in cuts:
-        for i in range(intermeds - 1):
-            path = cortex.polyutils.Surface.geodesic_path(surface, cut[i], cut[i+1])
-            seam.update(path)
-
-    for wall in walls:
-        for i in range(intermeds - 1):
-            path = cortex.polyutils.Surface.geodesic_path(surface, wall[i], wall[i+1])
-            mwall_edge.update(path)
-
-    smore = set()
-    for cut_point in seam:
-        smore.update(surface.graph.neighbors(cut_point))
-        smore.add(cut_point)
-
+def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge, seam, smore):
     all_points = set(range(len(subj_pts)))
     region_a = set()
 
@@ -232,7 +214,9 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, cuts, wall
 
     print(cmd)
     
-    subprocess.check_call(shlex.split(cmd))
+    #subprocess.check_call(shlex.split(cmd))
+
+    return verts
 
 ############################################################
 
@@ -265,17 +249,40 @@ def autocut(subject, hemisphere):
             idx += 1
         segments.append(segment)
 
-    for i in range(6, 10): # add the previous wall's end to the beginning
+    for i in range(6, 10): # edit one: make sure that the medial wall is continous
         segments[i][0] = segments[i - 1][-1]
 
+    ######################
+    
+    mwall_edge = set()
+    seam = set()
+    for wall in segments[5:]:
+        for i in range(points - 1):
+            path = cortex.polyutils.Surface.geodesic_path(surface, wall[i], wall[i+1])
+            mwall_edge.update(path)
+       
+    for i in range(0, 5): # edit two: make sure that seam base is on closest point on mwall
+        dists = cortex.polyutils.Surface.approx_geodesic_distance(surface, segments[i][0])
+        segments[i][0] = min(mwall_edge, key = lambda x: dists[x])
+
+    for cut in segments[:5]:
+        for i in range(points - 1):
+            path = cortex.polyutils.Surface.geodesic_path(surface, cut[i], cut[i+1])
+            seam.update(path)
+
+    smore = set()
+    for cut_point in seam:
+        smore.update(surface.graph.neighbors(cut_point))
+        smore.add(cut_point)
+ 
+    ######################
+    
     for num, s in enumerate(segments):
-        if num > 4:
-            print(s)
         for i in range(points - 1):
             path = cortex.polyutils.Surface.geodesic_path(surface, s[i], s[i+1])
             hemi[path] = num + 1
 
-    generate_patch(surface, subject, hemisphere, pts, points, segments[:5], segments[5:])
+    generate_patch(surface, subject, hemisphere, pts, points, mwall_edge, seam, smore)
 
     cortex.webshow(v, open_browser=False)
 
