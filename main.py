@@ -214,7 +214,7 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
 
     print(cmd)
     
-    #subprocess.check_call(shlex.split(cmd))
+    subprocess.check_call(shlex.split(cmd))
 
     return verts
 
