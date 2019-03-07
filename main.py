@@ -208,14 +208,14 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
     inpath = patch_filepath
     outpath = inpath + ".flat"
 
-    save_every = 1
+    save_every = 20
     save_every_str = ' -w %d'%save_every
 
     cmd = "mris_flatten -O fiducial{save_every_str} {inpath} {outpath}".format(inpath=inpath, outpath=outpath, save_every_str=save_every_str)
 
     print(cmd)
     
-    p = subprocess.Popen(shlex.split(cmd), cwd=".", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.call(shlex.split(cmd))
 
     return verts
 
