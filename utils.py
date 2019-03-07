@@ -185,7 +185,7 @@ def get_ends(direc, segments):
 
     return seam_landmarks, wall_landmarks
 
-def approximate(segments, subject, hemi, style="inflated"):
+def read_manual(segments, subject, hemi, style="inflated"):
     global obj
     global surface
 

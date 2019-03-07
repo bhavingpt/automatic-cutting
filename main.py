@@ -18,11 +18,11 @@ load_dotenv()
 # regenerate the reference directory for a subject
 def generate(subject, hemisphere, points):
     my_id = subject + "-" + hemisphere
-    seams, walls, pts = utils.approximate(points - 1, subject, hemisphere)
+    seams, walls, pts = utils.read_manual(points - 1, subject, hemisphere)
 
     for x in os.walk("."):
         subdirs = [y for y in x[1] if y.endswith("-" + hemisphere) and y != my_id]
-        if len(subdirs) == 0:
+        if len(subdirs) == 0: # if there are no other matching hemi dirs to line up with
             utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
             return
 
@@ -34,8 +34,8 @@ def generate(subject, hemisphere, points):
            lines = [x[:-1] for x in f.readlines()]
            for line in lines:
                content = line.split(" ")
-               if len(content) > 3 and content[-1] != "0.00000":
-                   reference_bases.append(int(content[0]))
+               if len(content) > 3 and content[-1] != "0.00000": # find the point that is the base
+                   reference_bases.append(int(content[0])) # put that base in 'ref bases'
     
     r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
     r_surf = cortex.polyutils.Surface(r_pts, r_polys)
@@ -46,7 +46,7 @@ def generate(subject, hemisphere, points):
     correspondence = dict() # will store the mapping from old base to new one
 
     for idx in range(5):
-        base = seam[idx]
+        base = seams[idx][0]
 
         data = [0 for _ in range(len(pts))]
         data[base] = 1
@@ -89,6 +89,7 @@ def generate(subject, hemisphere, points):
         new_seams[correspondence[idx]] = seams[idx]
         new_walls[correspondence[idx]] = walls[idx]
          
+    # now that seams and walls are ordered properly - we can proceed
     utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1)
 
 ############################################################
