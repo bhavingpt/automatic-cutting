@@ -52,6 +52,7 @@ def generate(subject, hemisphere, points):
 
     for idx in range(5):
         base = seams[idx][0]
+        print('\n\nconverting ' + str(base))
 
         data = [0 for _ in range(len(pts))]
         data[base] = 1
@@ -83,16 +84,21 @@ def generate(subject, hemisphere, points):
         locations = nib.freesurfer.read_morph_data(ref_surf_dir + hemisphere + ".temp_transformed")
 
         base_transformed = numpy.argmax(locations)
+        print('transformed to ' + str(base))
 
         dists = r_surf.approx_geodesic_distance(base_transformed)
         base_dists = [dists[k] for k in reference_bases]
 
+        print(base_dists)
         for i in range(len(base_dists)): # fixes nan problem
             if numpy.isnan(base_dists[i]):
                 base_dists[i] = 1000
+        print(base_dists)
 
         correspondence[idx] = numpy.argmin(base_dists)
         os.system("rm temp.asc")
+
+    print(correspondence)
 
     # reorder the seams and walls according to the dictionary
     new_seams = [[], [], [], [], []]
@@ -309,7 +315,10 @@ def autocut(subject, hemisphere):
     cortex.webshow(v, open_browser=False)
 
 def main():
-    autocut(sys.argv[1], sys.argv[2])
+    if len(sys.argv) == 3:
+        autocut(sys.argv[1], sys.argv[2])
+    elif len(sys.argv) == 4:
+        generate(sys.argv[1], sys.argv[2], int(sys.argv[3]))
 
 if __name__ == "__main__":
     main()
