@@ -103,7 +103,7 @@ def generate(subject, hemisphere, points):
         new_walls[correspondence[idx]] = walls[idx]
          
     # now that seams and walls are ordered properly - we can proceed
-    utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1)
+    utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1, pts)
 
 ############################################################
 
