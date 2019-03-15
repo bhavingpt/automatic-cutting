@@ -23,8 +23,8 @@ def create(direc):
         pts = [int(x[:-1]) for x in f.readlines()]
     obj[pts] = 1
 
-    with open(direc + "/output_smore.txt") as f:
-        pts = [int(x[:-1]) for x in f.readlines()]
+    #with open(direc + "/output_smore.txt") as f:
+    #    pts = [int(x[:-1]) for x in f.readlines()]
     #obj[pts] = 3
 
     with open(direc + "/output_seam.txt") as f:

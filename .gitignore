@@ -1,6 +1,6 @@
 pycortex/
 __pycache__/
-*.asc
 .env
+*.asc
 *.pyc
 *.swp
