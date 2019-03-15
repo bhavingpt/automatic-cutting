@@ -20,9 +20,6 @@ def generate(subject, hemisphere, points):
     my_id = subject + "-" + hemisphere
     seams, walls, pts = utils.read_manual(points - 1, subject, hemisphere)
 
-    for s in seams:
-        print(s)
-
     child_dirs = next(os.walk('.'))[1]
     valid_subdirs = []
 
@@ -31,13 +28,10 @@ def generate(subject, hemisphere, points):
             valid_subdirs.append(y)
 
     if len(valid_subdirs) == 0: # if there are no other matching hemi dirs to line up with
-        print("Don't need to line anything up!")
-        exit(0) # TODO
         utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
         return
 
     reference = valid_subdirs[0]
-    print("Reference is " + reference)
     reference_bases = []
 
     for idx in range(5):
@@ -93,6 +87,10 @@ def generate(subject, hemisphere, points):
         dists = r_surf.approx_geodesic_distance(base_transformed)
         base_dists = [dists[k] for k in reference_bases]
 
+        for i in range(len(base_dists)): # fixes nan problem
+            if numpy.isnan(base_dists[i]):
+                base_dists[i] = 1000
+
         correspondence[idx] = numpy.argmin(base_dists)
         os.system("rm temp.asc")
 
@@ -103,9 +101,6 @@ def generate(subject, hemisphere, points):
     for idx in range(5):
         new_seams[correspondence[idx]] = seams[idx]
         new_walls[correspondence[idx]] = walls[idx]
-    
-    print(correspondence)
-    exit(0)
          
     # now that seams and walls are ordered properly - we can proceed
     utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1)
