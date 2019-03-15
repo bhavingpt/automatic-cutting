@@ -4,7 +4,7 @@ import numpy
 
 import struct
 
-import os, sys
+import os, sys, glob
 import subprocess
 import shlex
 import utils, copy
@@ -20,17 +20,28 @@ def generate(subject, hemisphere, points):
     my_id = subject + "-" + hemisphere
     seams, walls, pts = utils.read_manual(points - 1, subject, hemisphere)
 
-    for x in os.walk("."):
-        subdirs = [y for y in x[1] if y.endswith("-" + hemisphere) and y != my_id]
-        if len(subdirs) == 0: # if there are no other matching hemi dirs to line up with
-            utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
-            return
+    for s in seams:
+        print(s)
 
-    reference = subdirs[0]
+    child_dirs = next(os.walk('.'))[1]
+    valid_subdirs = []
+
+    for y in child_dirs:
+        if y.endswith("-" + hemisphere) and y != my_id and len(glob.glob(y + "/*.asc")) != 0:
+            valid_subdirs.append(y)
+
+    if len(valid_subdirs) == 0: # if there are no other matching hemi dirs to line up with
+        print("Don't need to line anything up!")
+        exit(0) # TODO
+        utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
+        return
+
+    reference = valid_subdirs[0]
+    print("Reference is " + reference)
     reference_bases = []
 
     for idx in range(5):
-        with open(reference + "/cut" + str(idx) + "_0.asc") as f:
+        with open(reference + "/cut" + str(idx + 1) + "_0.asc") as f:
            lines = [x[:-1] for x in f.readlines()]
            for line in lines:
                content = line.split(" ")
@@ -50,16 +61,20 @@ def generate(subject, hemisphere, points):
 
         data = [0 for _ in range(len(pts))]
         data[base] = 1
+        
+        if os.path.exists('temp.asc'):
+            os.remove('temp.asc')
+
         with open("temp.asc", "w+") as f:
             inds = range(len(data))
-            for ind, (x, y, x), d in zip(inds, pts, data):
+            for ind, (x, y, z), d in zip(inds, pts, data):
                 f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
 
         FNULL = open(os.devnull, 'w')
         subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/"
 
         subprocess.call(["mris_convert", "-c",
-               "temp.asc",
+               "./temp.asc",
                subj_surf_dir + hemisphere + ".white",
                "temp_converted"], stdout = FNULL, stderr = subprocess.STDOUT)
 
@@ -88,6 +103,9 @@ def generate(subject, hemisphere, points):
     for idx in range(5):
         new_seams[correspondence[idx]] = seams[idx]
         new_walls[correspondence[idx]] = walls[idx]
+    
+    print(correspondence)
+    exit(0)
          
     # now that seams and walls are ordered properly - we can proceed
     utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1)
