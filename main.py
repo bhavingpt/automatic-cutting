@@ -45,6 +45,9 @@ def generate(subject, hemisphere, points):
     r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
     r_surf = cortex.polyutils.Surface(r_pts, r_polys)
 
+    print("using " + reference + " as a reference dir")
+    print("ref bases: " + str(reference_bases))
+
     reference = reference.split("-")[0]
     ref_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + reference + "/surf/"
 
@@ -84,7 +87,7 @@ def generate(subject, hemisphere, points):
         locations = nib.freesurfer.read_morph_data(ref_surf_dir + hemisphere + ".temp_transformed")
 
         base_transformed = numpy.argmax(locations)
-        print('transformed to ' + str(base))
+        print('transformed to ' + str(base_transformed))
 
         dists = r_surf.approx_geodesic_distance(base_transformed)
         base_dists = [dists[k] for k in reference_bases]
@@ -114,7 +117,12 @@ def generate(subject, hemisphere, points):
     for w in new_walls:
         print(w)
 
-    exit(0)
+    exit(0) # TODO EB01 rh is producing fail
+            #      EB01 lh is working fine
+            #      EB03 rh is producing fail
+            #      EB03 lh is producing fail
+            #      EB04 rh is working fine
+            #      EB04 lh is working fine
     
     # now that seams and walls are ordered properly - we can proceed
     utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1, pts)
