@@ -89,7 +89,7 @@ def generate(subject, hemisphere, points):
         base_transformed = numpy.argmax(locations)
         print('transformed to ' + str(base_transformed))
 
-        dists = r_surf.approx_geodesic_distance(base_transformed)
+        dists = r_surf.approx_geodesic_distance(base_transformed, m=10)
         base_dists = [dists[k] for k in reference_bases]
 
         for i in range(len(base_dists)): # fixes nan problem
@@ -97,31 +97,76 @@ def generate(subject, hemisphere, points):
                 base_dists[i] = 1000
         print(base_dists)
 
-        correspondence[idx] = numpy.argmin(base_dists)
+        correspondence[idx] = base_dists
         os.system("rm temp.asc")
 
+    matching = dict()
+    unassigned = []
+
+    for destination in range(5):
+        transforms = 0
+        transformer = None
+        for source in range(5):
+            if source in correspondence and numpy.argmin(correspondence[source]) == destination:
+                transforms += 1
+                transformer = source
+
+        # if easy, then assign to matching dict
+        if transforms == 1:
+            del correspondence[transformer]
+            matching[transformer] = destination
+        else:
+            unassigned.append(destination)
+
+    print(matching)
     print(correspondence)
+    print(unassigned)
+
+    print('\n\n')
+
+    if len(unassigned) >= 3:
+        print("Error: couldn't transform bases with this reference subject, cuts are overlapping.")
+        exit(0)
+    elif len(unassigned) == 2:
+        source_a = list(correspondence.keys())[0]
+        source_b = list(correspondence.keys())[1]
+
+        one = correspondence[source_a][unassigned[0]] + correspondence[source_b][unassigned[1]]
+        two = correspondence[source_b][unassigned[0]] + correspondence[source_a][unassigned[1]]
+
+        matching[source_a] = unassigned[0] if one < two else unassigned[1]
+        matching[source_b] = unassigned[1] if one < two else unassigned[0]
+
+    print(matching)
+    print('\n')
+    for s in seams:
+        print(s)
+    print('\n')
+    for w in walls:
+        print(w)
+    print('\n')
 
     # reorder the seams and walls according to the dictionary
     new_seams = [[], [], [], [], []]
     new_walls = [[], [], [], [], []]
 
     for idx in range(5):
-        new_seams[correspondence[idx]] = seams[idx]
-        new_walls[correspondence[idx]] = walls[idx]
+        new_seams[matching[idx]] = seams[idx]
+        new_walls[matching[idx]] = walls[idx]
 
     for s in new_seams:
         print(s)
+    print('\n')
 
     for w in new_walls:
         print(w)
 
-    exit(0) # TODO EB01 rh is producing fail
-            #      EB01 lh is working fine
-            #      EB03 rh is producing fail
-            #      EB03 lh is producing fail
-            #      EB04 rh is working fine
-            #      EB04 lh is working fine
+    exit(0) # EB01 lh is working fine (0 confusion)
+            # EB01 rh is not erroring (2 confusion) TODO check if correct tho
+            # EB03 lh is producing fail             TODO only four walls wtf
+            # EB03 rh is working fine (0 confusion)
+            # EB04 lh is working fine (0 confusion)
+            # EB04 rh is working fine (0 confusion)
     
     # now that seams and walls are ordered properly - we can proceed
     utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1, pts)
