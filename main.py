@@ -45,7 +45,7 @@ def generate(subject, hemisphere, points):
     r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
     r_surf = cortex.polyutils.Surface(r_pts, r_polys)
 
-    print("using " + reference + " as a reference dir")
+    print("\n\nusing " + reference + " as a reference dir")
     print("ref bases: " + str(reference_bases))
 
     reference = reference.split("-")[0]
@@ -55,7 +55,7 @@ def generate(subject, hemisphere, points):
 
     for idx in range(5):
         base = seams[idx][0]
-        print('\n\nconverting ' + str(base))
+        print('\nconverting ' + str(base))
 
         data = [0 for _ in range(len(pts))]
         data[base] = 1
@@ -92,7 +92,6 @@ def generate(subject, hemisphere, points):
         dists = r_surf.approx_geodesic_distance(base_transformed)
         base_dists = [dists[k] for k in reference_bases]
 
-        print(base_dists)
         for i in range(len(base_dists)): # fixes nan problem
             if numpy.isnan(base_dists[i]):
                 base_dists[i] = 1000
@@ -323,6 +322,7 @@ def autocut(subject, hemisphere):
     cortex.webshow(v, open_browser=False)
 
 def main():
+    os.environ["PYTHONWARNINGS"] = "ignore"
     if len(sys.argv) == 3:
         autocut(sys.argv[1], sys.argv[2])
     elif len(sys.argv) == 4:
