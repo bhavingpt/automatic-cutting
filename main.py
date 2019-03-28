@@ -38,19 +38,19 @@ def generate(subject, hemisphere, points):
 
     # TODO generate reference_walls
 
-    # generate reference bases
+    # generate reference walls
     for idx in range(5):
         nums = []
         j = 0
         while True:
-            if os.path.exists(reference + "/cut" + str(idx + 1) + "_" + str(j) + ".asc"):
+            if os.path.exists(reference + "/wall" + str(idx + 1) + "_" + str(j) + ".asc"):
                 nums.append(j)
                 j += 1
             else:
                 break
 
         middle = nums[int((len(nums) - 1)/2)]
-        with open(reference + "/cut" + str(idx + 1) + "_" + str(middle) + ".asc") as f:
+        with open(reference + "/wall" + str(idx + 1) + "_" + str(middle) + ".asc") as f:
            lines = [x[:-1] for x in f.readlines()]
            for line in lines:
                content = line.split(" ")
