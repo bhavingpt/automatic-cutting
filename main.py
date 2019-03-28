@@ -34,7 +34,30 @@ def generate(subject, hemisphere, points):
 
     reference = valid_subdirs[0]
     reference_bases = []
+    reference_walls = []
 
+    # TODO generate reference_walls
+
+    # generate reference bases
+    for idx in range(5):
+        nums = []
+        j = 0
+        while True:
+            if os.path.exists(reference + "/cut" + str(idx + 1) + "_" + str(j) + ".asc"):
+                nums.append(j)
+                j += 1
+            else:
+                break
+
+        middle = nums[int((len(nums) - 1)/2)]
+        with open(reference + "/cut" + str(idx + 1) + "_" + str(middle) + ".asc") as f:
+           lines = [x[:-1] for x in f.readlines()]
+           for line in lines:
+               content = line.split(" ")
+               if len(content) > 3 and content[-1] != "0.00000": # find the point that is the base
+                   reference_walls.append(int(content[0])) # put that base in 'ref bases'
+    
+    # generate reference bases
     for idx in range(5):
         with open(reference + "/cut" + str(idx + 1) + "_0.asc") as f:
            lines = [x[:-1] for x in f.readlines()]
@@ -52,7 +75,10 @@ def generate(subject, hemisphere, points):
     reference = reference.split("-")[0]
     ref_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + reference + "/surf/"
 
-    correspondence = dict() # will store the mapping from old base to new one
+    seam_correspondence = dict() # will store the mapping from old base to new one
+    wall_correspondence = dict()
+
+    ##################################################################################
 
     for idx in range(5):
         base = seams[idx][0]
@@ -98,62 +124,135 @@ def generate(subject, hemisphere, points):
                 base_dists[i] = 1000
         print(base_dists)
 
-        correspondence[idx] = base_dists
+        seam_correspondence[idx] = base_dists
         os.system("rm temp.asc")
 
-    matching = dict()
+    seam_matching = dict()
     unassigned = []
 
     for destination in range(5):
         transforms = 0
         transformer = None
         for source in range(5):
-            if source in correspondence and numpy.argmin(correspondence[source]) == destination:
+            if source in seam_correspondence and numpy.argmin(seam_correspondence[source]) == destination:
                 transforms += 1
                 transformer = source
 
         # if easy, then assign to matching dict
         if transforms == 1:
-            del correspondence[transformer]
-            matching[transformer] = destination
+            del seam_correspondence[transformer]
+            seam_matching[transformer] = destination
         else:
             unassigned.append(destination)
-
-    print(matching)
-    print(correspondence)
-    print(unassigned)
-
-    print('\n\n')
 
     if len(unassigned) >= 3:
         print("Error: couldn't transform bases with this reference subject, cuts are overlapping.")
         exit(0)
     elif len(unassigned) == 2:
-        source_a = list(correspondence.keys())[0]
-        source_b = list(correspondence.keys())[1]
+        source_a = list(seam_correspondence.keys())[0]
+        source_b = list(seam_correspondence.keys())[1]
 
-        one = correspondence[source_a][unassigned[0]] + correspondence[source_b][unassigned[1]]
-        two = correspondence[source_b][unassigned[0]] + correspondence[source_a][unassigned[1]]
+        one = seam_correspondence[source_a][unassigned[0]] + seam_correspondence[source_b][unassigned[1]]
+        two = seam_correspondence[source_b][unassigned[0]] + seam_correspondence[source_a][unassigned[1]]
 
-        matching[source_a] = unassigned[0] if one < two else unassigned[1]
-        matching[source_b] = unassigned[1] if one < two else unassigned[0]
+        seam_matching[source_a] = unassigned[0] if one < two else unassigned[1]
+        seam_matching[source_b] = unassigned[1] if one < two else unassigned[0]
 
-    print(matching)
-    print('\n')
-    for s in seams:
-        print(s)
-    print('\n')
-    for w in walls:
-        print(w)
-    print('\n')
+
+    ############################################################################
+
+    print('\n\n\n\n\n\n')
+    print(reference_walls)
+
+    for idx in range(5):
+        wall = walls[idx]
+        base = wall[int((len(wall) - 1)/2)]
+        print('\nconverting ' + str(base))
+
+        data = [0 for _ in range(len(pts))]
+        data[base] = 1
+        
+        if os.path.exists('temp.asc'):
+            os.remove('temp.asc')
+
+        with open("temp.asc", "w+") as f:
+            inds = range(len(data))
+            for ind, (x, y, z), d in zip(inds, pts, data):
+                f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
+
+        FNULL = open(os.devnull, 'w')
+        subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/"
+
+        subprocess.call(["mris_convert", "-c",
+               "./temp.asc",
+               subj_surf_dir + hemisphere + ".white",
+               "temp_converted"], stdout = FNULL, stderr = subprocess.STDOUT)
+
+        subprocess.call(["mri_surf2surf",
+               "--srcsubject", subject,
+               "--srcsurfval", subj_surf_dir + hemisphere + ".temp_converted",
+               "--trgsubject", reference,
+               "--trgsurfval", hemisphere + ".temp_transformed",
+               "--hemi", hemisphere,
+               "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
+
+        locations = nib.freesurfer.read_morph_data(ref_surf_dir + hemisphere + ".temp_transformed")
+
+        base_transformed = numpy.argmax(locations)
+        print('transformed to ' + str(base_transformed))
+
+        dists = r_surf.approx_geodesic_distance(base_transformed, m=10)
+        base_dists = [dists[k] for k in reference_walls]
+
+        for i in range(len(base_dists)): # fixes nan problem
+            if numpy.isnan(base_dists[i]):
+                base_dists[i] = 1000
+        print(base_dists)
+
+        wall_correspondence[idx] = base_dists
+        os.system("rm temp.asc")
+
+    wall_matching = dict()
+    unassigned = []
+    print(wall_correspondence)
+
+    for destination in range(5):
+        transforms = 0
+        transformer = None
+        for source in range(5):
+            if source in wall_correspondence and numpy.argmin(wall_correspondence[source]) == destination:
+                transforms += 1
+                transformer = source
+
+        # if easy, then assign to matching dict
+        if transforms == 1:
+            del wall_correspondence[transformer]
+            wall_matching[transformer] = destination
+        else:
+            unassigned.append(destination)
+
+    if len(unassigned) >= 3:
+        print("Error: couldn't transform bases with this reference subject, walls are overlapping.")
+        exit(0)
+    elif len(unassigned) == 2:
+        source_a = list(wall_correspondence.keys())[0]
+        source_b = list(wall_correspondence.keys())[1]
+
+        one = wall_correspondence[source_a][unassigned[0]] + wall_correspondence[source_b][unassigned[1]]
+        two = wall_correspondence[source_b][unassigned[0]] + wall_correspondence[source_a][unassigned[1]]
+
+        wall_matching[source_a] = unassigned[0] if one < two else unassigned[1]
+        wall_matching[source_b] = unassigned[1] if one < two else unassigned[0]
+
+    ############################################################################
 
     # reorder the seams and walls according to the dictionary
     new_seams = [[], [], [], [], []]
     new_walls = [[], [], [], [], []]
 
     for idx in range(5):
-        new_seams[matching[idx]] = seams[idx]
-        new_walls[matching[idx]] = walls[idx]
+        new_seams[seam_matching[idx]] = seams[idx]
+        new_walls[wall_matching[idx]] = walls[idx]
 
     for s in new_seams:
         print(s)
