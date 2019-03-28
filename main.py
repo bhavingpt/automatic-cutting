@@ -28,6 +28,7 @@ def generate(subject, hemisphere, points):
             valid_subdirs.append(y)
 
     if len(valid_subdirs) == 0: # if there are no other matching hemi dirs to line up with
+        return seams, walls # TODO
         utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
         return
 
