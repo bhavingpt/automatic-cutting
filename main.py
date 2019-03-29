@@ -28,15 +28,12 @@ def generate(subject, hemisphere, points):
             valid_subdirs.append(y)
 
     if len(valid_subdirs) == 0: # if there are no other matching hemi dirs to line up with
-        return seams, walls # TODO
         utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
         return
 
     reference = valid_subdirs[0]
     reference_bases = []
     reference_walls = []
-
-    # TODO generate reference_walls
 
     # generate reference walls
     for idx in range(5):
@@ -263,7 +260,7 @@ def generate(subject, hemisphere, points):
 
     return new_seams, new_walls
 
-    exit(0) # EB01 lh is working fine (0 confusion)
+            # EB01 lh is working fine (0 confusion)
             # EB01 rh is not erroring (2 confusion) TODO check if correct tho
             # EB03 lh is producing fail             TODO only four walls wtf
             # EB03 rh is working fine (0 confusion)
