@@ -24,3 +24,13 @@ def hi(subj, hemi):
             obj[path] = i + 1
 
     return v
+
+def com(subj, hemi, nums):
+    v = cortex.Vertex.empty(subj)
+    obj = v.left if hemi == "lh" else v.right
+
+    obj[nums[0]] = 1
+    for n in nums[1:]:
+        obj[n] = 2
+
+    return v

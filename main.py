@@ -340,11 +340,19 @@ def find_match(target_subject, surface, subjects, pts, target_file):
         locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + "." + uuidt)
         estimates.append(numpy.argmax(locations))
 
+    print(estimates)
+
     distances = {}
     for estimate in estimates:
         distances[estimate] = surface.approx_geodesic_distance(estimate, m=10)
+        print(distances[estimate][:10])
+        print('\n')
 
-    answer = min(pts, key = lambda pt: sum([ distances[est][pt] for est in estimates ]) )
+    all_points = range(len(pts))
+    answer = min(all_points, key = lambda pt: sum([ distances[est][pt] for est in estimates ]) )
+
+    print(str(answer) + " " + str(estimates))
+    exit(0)
     return answer
 
 def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge, seam, smore):
@@ -402,6 +410,7 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
 
 def autocut(subject, hemisphere):
     subjects, points = parse_reference(hemisphere)
+    print("Found subjects - " + str(subjects))
     v = cortex.Vertex.empty(subject)
     hemi = v.left if hemisphere == "lh" else v.right
     pts, polys = cortex.db.get_surf(subject, "inflated", hemisphere)
@@ -411,7 +420,10 @@ def autocut(subject, hemisphere):
              "wall1_", "wall2_", "wall3_", "wall4_", "wall5_"]
 
     transforms = []
+        
+    find_match(subject, surface, subjects, pts, "cut1_0.asc")
 
+    ''' # GOOD
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
         for i in range(0, points):
@@ -419,6 +431,7 @@ def autocut(subject, hemisphere):
 
     with multiprocessing.Pool(processes=len(transforms)) as pool:
         results = pool.starmap(find_match, transforms)
+    '''
 
     segments = []
     idx = 0
