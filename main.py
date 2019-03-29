@@ -257,8 +257,6 @@ def generate(subject, hemisphere, points):
     for w in new_walls:
         print(w)
 
-    return new_seams, new_walls
-
             # EB01 lh is working fine (0 confusion)
             # EB01 rh is working fine
             # EB03 lh is producing fail             TODO only four walls wtf
