@@ -155,7 +155,6 @@ def generate(subject, hemisphere, points):
         seam_matching[source_a] = unassigned[0] if one < two else unassigned[1]
         seam_matching[source_b] = unassigned[1] if one < two else unassigned[0]
 
-
     ############################################################################
 
     print('\n\n\n\n\n\n')
@@ -261,7 +260,7 @@ def generate(subject, hemisphere, points):
     return new_seams, new_walls
 
             # EB01 lh is working fine (0 confusion)
-            # EB01 rh is not erroring (2 confusion) TODO check if correct tho
+            # EB01 rh is working fine
             # EB03 lh is producing fail             TODO only four walls wtf
             # EB03 rh is working fine (0 confusion)
             # EB04 lh is working fine (0 confusion)
@@ -307,7 +306,7 @@ def parse_reference(hemi):
 
     return subjects, points
 
-def find_match(target_subject, surface, subjects, points, target_file):
+def find_match(target_subject, surface, subjects, pts, target_file):
     target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
     estimates = []
     uuidc = target_file[:-4] + "_converted"
@@ -343,8 +342,12 @@ def find_match(target_subject, surface, subjects, points, target_file):
         locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + "." + uuidt)
         estimates.append(numpy.argmax(locations))
 
-    #print("    Output point: " + str(estimates[0]))
-    return estimates[0]
+    distances = {}
+    for estimate in estimates:
+        distances[estimate] = surface.approx_geodesic_distance(estimate, m=10)
+
+    answer = min(pts, key = lambda pt: sum([ distances[est][pt] for est in estimates ]) )
+    return answer
 
 def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge, seam, smore):
     all_points = set(range(len(subj_pts)))
@@ -414,7 +417,7 @@ def autocut(subject, hemisphere):
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
         for i in range(0, points):
-            transforms.append((subject, surface, subjects, points, base + str(i) + ".asc"))
+            transforms.append((subject, surface, subjects, pts, base + str(i) + ".asc"))
 
     with multiprocessing.Pool(processes=len(transforms)) as pool:
         results = pool.starmap(find_match, transforms)
