@@ -352,7 +352,6 @@ def find_match(target_subject, surface, subjects, pts, target_file):
     answer = min(all_points, key = lambda pt: sum([ distances[est][pt] for est in estimates ]) )
 
     print(str(answer) + " " + str(estimates))
-    exit(0)
     return answer
 
 def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge, seam, smore):
@@ -421,9 +420,8 @@ def autocut(subject, hemisphere):
 
     transforms = []
         
-    find_match(subject, surface, subjects, pts, "cut1_0.asc")
+    #find_match(subject, surface, subjects, pts, "cut1_0.asc")
 
-    ''' # GOOD
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
         for i in range(0, points):
@@ -431,7 +429,6 @@ def autocut(subject, hemisphere):
 
     with multiprocessing.Pool(processes=len(transforms)) as pool:
         results = pool.starmap(find_match, transforms)
-    '''
 
     segments = []
     idx = 0
