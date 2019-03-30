@@ -282,9 +282,10 @@ def calc_points(subject):
 
     return -1 if min_val < 3 else min_val
 
-def parse_reference(hemi):
+def parse_reference(subject, hemi):
+    my_id = subject + "-" + hemi
     for x in os.walk("."):
-        subdirs = [y for y in x[1] if y.endswith("-" + hemi)]
+        subdirs = [y for y in x[1] if y.endswith("-" + hemi) and y != my_id]
         break
 
     calc = [calc_points(subject) for subject in subdirs]
@@ -408,7 +409,7 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
 ############################################################
 
 def autocut(subject, hemisphere):
-    subjects, points = parse_reference(hemisphere)
+    subjects, points = parse_reference(subject, hemisphere)
     print("Found subjects - " + str(subjects))
     v = cortex.Vertex.empty(subject)
     hemi = v.left if hemisphere == "lh" else v.right
