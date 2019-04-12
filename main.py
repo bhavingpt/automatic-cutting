@@ -28,6 +28,7 @@ def generate(subject, hemisphere, points):
             valid_subdirs.append(y)
 
     if len(valid_subdirs) == 0: # if there are no other matching hemi dirs to line up with
+        print(seams[0])
         utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
         return
 
@@ -341,7 +342,7 @@ def find_match(target_subject, surface, subjects, pts, target_file):
         locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + "." + uuidt)
         estimates.append(numpy.argmax(locations))
 
-    print(estimates)
+    print("HI - " + str(target_file) + " " + str(estimates))
 
     distances = {}
     for estimate in estimates:
@@ -391,6 +392,9 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
                 f.write(struct.pack('>i3f', -i-1, *pt))
             else:
                 f.write(struct.pack('>i3f', i+1, *pt))
+
+    # TODO this patch file is messed up... let's stop here
+    exit(0)
 
     inpath = patch_filepath
     outpath = inpath + ".flat"
@@ -469,13 +473,18 @@ def autocut(subject, hemisphere):
     ######################
     
     for num, s in enumerate(segments):
-        for i in range(points - 1):
-            path = cortex.polyutils.Surface.geodesic_path(surface, s[i], s[i+1])
-            hemi[path] = num + 1
+        for i in mwall_edge:
+            hemi[i] = 1
+        for i in smore:
+            hemi[i] = 2
+        for i in seam:
+            hemi[i] = 3
 
-    generate_patch(surface, subject, hemisphere, pts, points, mwall_edge, seam, smore)
+    return v
 
     cortex.webshow(v, open_browser=False)
+
+    generate_patch(surface, subject, hemisphere, pts, points, mwall_edge, seam, smore)
 
 def main():
     os.environ["PYTHONWARNINGS"] = "ignore"
