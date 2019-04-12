@@ -4,3 +4,4 @@ __pycache__/
 *.asc
 *.pyc
 *.swp
+*.npy
