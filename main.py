@@ -24,46 +24,45 @@ def generate(subject, hemisphere, points):
     valid_subdirs = []
 
     for y in child_dirs:
-        if y.endswith("-" + hemisphere) and y != my_id and len(glob.glob(y + "/*.asc")) != 0:
+        if y.endswith("-" + hemisphere) and y != my_id and len(glob.glob(y + "/*.npy")) != 0:
             valid_subdirs.append(y)
 
     if len(valid_subdirs) == 0: # if there are no other matching hemi dirs to line up with
         print(seams[0])
-        utils.generate_asc_files(subject, hemisphere, seams, walls, points - 1, pts)
+        utils.generate_npy_files(subject, hemisphere, seams, walls, points - 1, pts)
         return
 
     reference = valid_subdirs[0]
     reference_bases = []
     reference_walls = []
 
+    if not os.path.exists(my_id + '/convert_' + reference.split("-")[0] + '.npy'):
+        # we need to generate the transformation matrix
+        matrix = cortex.freesurfer.get_mri_surf2surf_matrix(subject, hemisphere, "inflated", subject)
+        np.save(my_id + '/convert_' + reference.split("-")[0] + '.npy')
+
+    matrix = npy.load(my_id + '/convert_' + reference.split("-")[0] + '.npy')
+
     # generate reference walls
     for idx in range(5):
         nums = []
         j = 0
         while True:
-            if os.path.exists(reference + "/wall" + str(idx + 1) + "_" + str(j) + ".asc"):
+            if os.path.exists(reference + "/wall" + str(idx + 1) + "_" + str(j) + ".npy"):
                 nums.append(j)
                 j += 1
             else:
                 break
 
         middle = nums[int((len(nums) - 1)/2)]
-        with open(reference + "/wall" + str(idx + 1) + "_" + str(middle) + ".asc") as f:
-           lines = [x[:-1] for x in f.readlines()]
-           for line in lines:
-               content = line.split(" ")
-               if len(content) > 3 and content[-1] != "0.00000": # find the point that is the base
-                   reference_walls.append(int(content[0])) # put that base in 'ref bases'
+        wall = npy.load(reference + "/wall" + str(idx + 1) + "_" + str(middle) + ".npy")[0]
+        reference_walls.append(wall) # put that base in 'ref walls'
     
     # generate reference bases
     for idx in range(5):
-        with open(reference + "/cut" + str(idx + 1) + "_0.asc") as f:
-           lines = [x[:-1] for x in f.readlines()]
-           for line in lines:
-               content = line.split(" ")
-               if len(content) > 3 and content[-1] != "0.00000": # find the point that is the base
-                   reference_bases.append(int(content[0])) # put that base in 'ref bases'
-    
+        base = npy.load(reference + "/cut" + str(idx + 1) + "_0.npy")[0]
+        reference_bases.append(base)
+
     r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
     r_surf = cortex.polyutils.Surface(r_pts, r_polys)
 
@@ -82,36 +81,11 @@ def generate(subject, hemisphere, points):
         base = seams[idx][0]
         print('\nconverting ' + str(base))
 
-        data = [0 for _ in range(len(pts))]
-        data[base] = 1
-        
-        if os.path.exists('temp.asc'):
-            os.remove('temp.asc')
+        all_pts = [0 for i in range(len(pts))]
+        all_pts[base] = 1
 
-        with open("temp.asc", "w+") as f:
-            inds = range(len(data))
-            for ind, (x, y, z), d in zip(inds, pts, data):
-                f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
+        base_transformed = numpy.argmax(matrix * all_pts)
 
-        FNULL = open(os.devnull, 'w')
-        subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/"
-
-        subprocess.call(["mris_convert", "-c",
-               "./temp.asc",
-               subj_surf_dir + hemisphere + ".white",
-               "temp_converted"], stdout = FNULL, stderr = subprocess.STDOUT)
-
-        subprocess.call(["mri_surf2surf",
-               "--srcsubject", subject,
-               "--srcsurfval", subj_surf_dir + hemisphere + ".temp_converted",
-               "--trgsubject", reference,
-               "--trgsurfval", hemisphere + ".temp_transformed",
-               "--hemi", hemisphere,
-               "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
-
-        locations = nib.freesurfer.read_morph_data(ref_surf_dir + hemisphere + ".temp_transformed")
-
-        base_transformed = numpy.argmax(locations)
         print('transformed to ' + str(base_transformed))
 
         dists = r_surf.approx_geodesic_distance(base_transformed, m=10)
@@ -123,7 +97,6 @@ def generate(subject, hemisphere, points):
         print(base_dists)
 
         seam_correspondence[idx] = base_dists
-        os.system("rm temp.asc")
 
     seam_matching = dict()
     unassigned = []
@@ -166,36 +139,11 @@ def generate(subject, hemisphere, points):
         base = wall[int((len(wall) - 1)/2)]
         print('\nconverting ' + str(base))
 
-        data = [0 for _ in range(len(pts))]
-        data[base] = 1
-        
-        if os.path.exists('temp.asc'):
-            os.remove('temp.asc')
+        all_pts = [0 for i in range(len(pts))]
+        all_pts[base] = 1
 
-        with open("temp.asc", "w+") as f:
-            inds = range(len(data))
-            for ind, (x, y, z), d in zip(inds, pts, data):
-                f.write("%3.3d %2.5f %2.5f %2.5f %2.5f\n" % (ind, x, y, z, d))
+        base_transformed = numpy.argmax(matrix * all_pts)
 
-        FNULL = open(os.devnull, 'w')
-        subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subject + "/surf/"
-
-        subprocess.call(["mris_convert", "-c",
-               "./temp.asc",
-               subj_surf_dir + hemisphere + ".white",
-               "temp_converted"], stdout = FNULL, stderr = subprocess.STDOUT)
-
-        subprocess.call(["mri_surf2surf",
-               "--srcsubject", subject,
-               "--srcsurfval", subj_surf_dir + hemisphere + ".temp_converted",
-               "--trgsubject", reference,
-               "--trgsurfval", hemisphere + ".temp_transformed",
-               "--hemi", hemisphere,
-               "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
-
-        locations = nib.freesurfer.read_morph_data(ref_surf_dir + hemisphere + ".temp_transformed")
-
-        base_transformed = numpy.argmax(locations)
         print('transformed to ' + str(base_transformed))
 
         dists = r_surf.approx_geodesic_distance(base_transformed, m=10)
@@ -207,7 +155,6 @@ def generate(subject, hemisphere, points):
         print(base_dists)
 
         wall_correspondence[idx] = base_dists
-        os.system("rm temp.asc")
 
     wall_matching = dict()
     unassigned = []
@@ -258,21 +205,14 @@ def generate(subject, hemisphere, points):
     for w in new_walls:
         print(w)
 
-            # EB01 lh is working fine (0 confusion)
-            # EB01 rh is working fine
-            # EB03 lh is producing fail             TODO only four walls wtf
-            # EB03 rh is working fine (0 confusion)
-            # EB04 lh is working fine (0 confusion)
-            # EB04 rh is working fine (0 confusion)
-    
     # now that seams and walls are ordered properly - we can proceed
-    utils.generate_asc_files(subject, hemisphere, new_seams, new_walls, points - 1, pts)
+    utils.generate_npy_files(subject, hemisphere, new_seams, new_walls, points - 1, pts)
 
 ############################################################
 
 def calc_points(subject):
     for x in os.walk("./" + subject):
-        files = [x for x in x[2] if x.endswith(".asc")]
+        files = [x for x in x[2] if x.endswith(".npy")]
         break
 
     min_val = 100
@@ -307,42 +247,20 @@ def parse_reference(subject, hemi):
     return subjects, points
 
 def find_match(target_subject, surface, subjects, pts, target_file):
-    target_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + target_subject + "/surf/"
     estimates = []
-    uuidc = target_file[:-4] + "_converted"
-    uuidt = target_file[:-4] + "_transformed"
-
-    FNULL = open(os.devnull, 'w')
 
     for subj_id in subjects:
-        subj, hemisphere = subj_id.split("-")
-        subj_surf_dir = os.environ['SUBJECTS_DIR'] + "/" + subj + "/surf/"
-        
-        with open(subj_id + "/" + target_file) as f:
-            lines = [x[:-1] for x in f.readlines()]
-            for line in lines:
-                content = line.split(" ")
-                if len(content) > 3 and content[-1] != "0.00000":
-                    pass
-                    #print("Input point: " + content[0])
+        source_subj, source_hemi = subj_id.split("-")
+        source_pts, _ = cortex.db.get_surf(source_subj, "inflated", source_hemi)
 
-        subprocess.call(["mris_convert", "-c",
-               "./" + subj_id + "/" + target_file, 
-               subj_surf_dir + hemisphere + ".white",
-               uuidc], stdout = FNULL, stderr = subprocess.STDOUT)
+        matrix = np.load(subj_id + '/convert_' + target_subject + '.npy')
+        source_point = np.load(subj_id + '/' + target_file)[0]
 
-        subprocess.call(["mri_surf2surf", 
-               "--srcsubject", subj,
-               "--srcsurfval", subj_surf_dir + hemisphere + "." + uuidc,
-               "--trgsubject", target_subject,
-               "--trgsurfval", hemisphere + "." + uuidt,
-               "--hemi", hemisphere,
-               "--trg_type", "curv"], stdout = FNULL, stderr = subprocess.STDOUT)
+        pts = [0 for i in range(len(source_pts))]
+        pts[source_point] = 1
 
-        locations = nib.freesurfer.read_morph_data(target_surf_dir + hemisphere + "." + uuidt)
-        estimates.append(numpy.argmax(locations))
-
-    print("HI - " + str(target_file) + " " + str(estimates))
+        result = matrix * pts
+        estimates.append(numpy.argmax(result))
 
     distances = {}
     for estimate in estimates:
@@ -415,6 +333,14 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
 def autocut(subject, hemisphere):
     subjects, points = parse_reference(subject, hemisphere)
     print("Found subjects - " + str(subjects))
+
+    for source_subject in subjects:
+        if not os.path.exists(source_subject + '/convert_' + subject + '.npy'):
+            # we need to generate the transformation matrix
+            s_subj, s_hemi = source_subject.split("-")
+            matrix = cortex.freesurfer.get_mri_surf2surf_matrix(s_subj, s_hemi, "inflated", subject)
+            np.save(source_subject + '/convert_' + subject + '.npy')
+
     v = cortex.Vertex.empty(subject)
     hemi = v.left if hemisphere == "lh" else v.right
     pts, polys = cortex.db.get_surf(subject, "inflated", hemisphere)
@@ -425,12 +351,10 @@ def autocut(subject, hemisphere):
 
     transforms = []
         
-    #find_match(subject, surface, subjects, pts, "cut1_0.asc")
-
     # calculate and add cuts and walls
     for idx, base in enumerate(todos):
         for i in range(0, points):
-            transforms.append((subject, surface, subjects, pts, base + str(i) + ".asc"))
+            transforms.append((subject, surface, subjects, pts, base + str(i) + ".npy"))
 
     with multiprocessing.Pool(processes=len(transforms)) as pool:
         results = pool.starmap(find_match, transforms)
