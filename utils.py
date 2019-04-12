@@ -1,6 +1,6 @@
 import cortex
 import random
-import os
+import os, glob
 import numpy as np
 import networkx as nx
 
@@ -214,7 +214,9 @@ def generate_npy_files(subject, hemi, seams, walls, segments, pts):
     direc = subject + '-' + hemi
 
     os.chdir(direc)
-    os.system("rm -rf *.npy")
+    for filename in glob.glob("*.npy"):
+        if 'convert' not in filename:
+            os.system("rm " + filename)
 
     # handle the cuts
     for i, seam in enumerate(seams):
