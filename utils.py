@@ -214,9 +214,7 @@ def generate_npy_files(subject, hemi, seams, walls, segments, pts):
     direc = subject + '-' + hemi
 
     os.chdir(direc)
-    for filename in glob.glob("*.npy"):
-        if 'convert' not in filename:
-            os.system("rm " + filename)
+    os.system("rm -rf *.npy")
 
     # handle the cuts
     for i, seam in enumerate(seams):

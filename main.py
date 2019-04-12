@@ -1,6 +1,7 @@
 import cortex
 import nibabel as nib
 import numpy
+from scipy import sparse
 
 import struct
 
@@ -36,12 +37,12 @@ def generate(subject, hemisphere, points):
     reference_bases = []
     reference_walls = []
 
-    if not os.path.exists(my_id + '/convert_' + reference.split("-")[0] + '.npy'):
+    if not os.path.exists(my_id + '/convert_' + reference.split("-")[0] + '.npz'):
         # we need to generate the transformation matrix
         matrix = cortex.freesurfer.get_mri_surf2surf_matrix(subject, hemisphere, "inflated", subject)
-        numpy.save(my_id + '/convert_' + reference.split("-")[0] + '.npy')
+        sparse.save_npz(my_id + '/convert_' + reference.split('-')[0] + '.npz', matrix)
 
-    matrix = numpy.load(my_id + '/convert_' + reference.split("-")[0] + '.npy')
+    matrix = sparse.load_npz(my_id + '/convert_' + reference.split("-")[0] + '.npz')
 
     # generate reference walls
     for idx in range(5):
@@ -55,12 +56,12 @@ def generate(subject, hemisphere, points):
                 break
 
         middle = nums[int((len(nums) - 1)/2)]
-        wall = numpy.load(reference + "/wall" + str(idx + 1) + "_" + str(middle) + ".npy")[0]
+        wall = int(numpy.load(reference + "/wall" + str(idx + 1) + "_" + str(middle) + ".npy"))
         reference_walls.append(wall) # put that base in 'ref walls'
     
     # generate reference bases
     for idx in range(5):
-        base = numpy.load(reference + "/cut" + str(idx + 1) + "_0.npy")[0]
+        base = int(numpy.load(reference + "/cut" + str(idx + 1) + "_0.npy"))
         reference_bases.append(base)
 
     r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
@@ -253,8 +254,8 @@ def find_match(target_subject, surface, subjects, pts, target_file):
         source_subj, source_hemi = subj_id.split("-")
         source_pts, _ = cortex.db.get_surf(source_subj, "inflated", source_hemi)
 
-        matrix = numpy.load(subj_id + '/convert_' + target_subject + '.npy')
-        source_point = numpy.load(subj_id + '/' + target_file)[0]
+        matrix = sparse.load_npz(subj_id + '/convert_' + target_subject + '.npz')
+        source_point = int(numpy.load(subj_id + '/' + target_file))
 
         pts = [0 for i in range(len(source_pts))]
         pts[source_point] = 1
@@ -335,11 +336,11 @@ def autocut(subject, hemisphere):
     print("Found subjects - " + str(subjects))
 
     for source_subject in subjects:
-        if not os.path.exists(source_subject + '/convert_' + subject + '.npy'):
+        if not os.path.exists(source_subject + '/convert_' + subject + '.npz'):
             # we need to generate the transformation matrix
             s_subj, s_hemi = source_subject.split("-")
             matrix = cortex.freesurfer.get_mri_surf2surf_matrix(s_subj, s_hemi, "inflated", subject)
-            numpy.save(source_subject + '/convert_' + subject + '.npy')
+            sparse.save_npz(source_subject + '/convert_' + subject + '.npz', matrix)
 
     v = cortex.Vertex.empty(subject)
     hemi = v.left if hemisphere == "lh" else v.right
@@ -350,22 +351,13 @@ def autocut(subject, hemisphere):
              "wall1_", "wall2_", "wall3_", "wall4_", "wall5_"]
 
     transforms = []
-        
-    # calculate and add cuts and walls
-    for idx, base in enumerate(todos):
-        for i in range(0, points):
-            transforms.append((subject, surface, subjects, pts, base + str(i) + ".npy"))
-
-    with multiprocessing.Pool(processes=len(transforms)) as pool:
-        results = pool.starmap(find_match, transforms)
 
     segments = []
-    idx = 0
-    for base in todos:
+    for idx, base in enumerate(todos):
         segment = []
         for i in range(0, points):
-            segment.append(results[idx])
-            idx += 1
+            val = find_match(subject, surface, subjects, pts, base + str(i) + ".npy")
+            segment.append(val)
         segments.append(segment)
 
     for i in range(6, 10): # edit one: make sure that the medial wall is continous
