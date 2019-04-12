@@ -39,9 +39,9 @@ def generate(subject, hemisphere, points):
     if not os.path.exists(my_id + '/convert_' + reference.split("-")[0] + '.npy'):
         # we need to generate the transformation matrix
         matrix = cortex.freesurfer.get_mri_surf2surf_matrix(subject, hemisphere, "inflated", subject)
-        np.save(my_id + '/convert_' + reference.split("-")[0] + '.npy')
+        numpy.save(my_id + '/convert_' + reference.split("-")[0] + '.npy')
 
-    matrix = npy.load(my_id + '/convert_' + reference.split("-")[0] + '.npy')
+    matrix = numpy.load(my_id + '/convert_' + reference.split("-")[0] + '.npy')
 
     # generate reference walls
     for idx in range(5):
@@ -55,12 +55,12 @@ def generate(subject, hemisphere, points):
                 break
 
         middle = nums[int((len(nums) - 1)/2)]
-        wall = npy.load(reference + "/wall" + str(idx + 1) + "_" + str(middle) + ".npy")[0]
+        wall = numpy.load(reference + "/wall" + str(idx + 1) + "_" + str(middle) + ".npy")[0]
         reference_walls.append(wall) # put that base in 'ref walls'
     
     # generate reference bases
     for idx in range(5):
-        base = npy.load(reference + "/cut" + str(idx + 1) + "_0.npy")[0]
+        base = numpy.load(reference + "/cut" + str(idx + 1) + "_0.npy")[0]
         reference_bases.append(base)
 
     r_pts, r_polys = cortex.db.get_surf(reference.split("-")[0], "inflated", reference.split("-")[1])
@@ -253,8 +253,8 @@ def find_match(target_subject, surface, subjects, pts, target_file):
         source_subj, source_hemi = subj_id.split("-")
         source_pts, _ = cortex.db.get_surf(source_subj, "inflated", source_hemi)
 
-        matrix = np.load(subj_id + '/convert_' + target_subject + '.npy')
-        source_point = np.load(subj_id + '/' + target_file)[0]
+        matrix = numpy.load(subj_id + '/convert_' + target_subject + '.npy')
+        source_point = numpy.load(subj_id + '/' + target_file)[0]
 
         pts = [0 for i in range(len(source_pts))]
         pts[source_point] = 1
@@ -339,7 +339,7 @@ def autocut(subject, hemisphere):
             # we need to generate the transformation matrix
             s_subj, s_hemi = source_subject.split("-")
             matrix = cortex.freesurfer.get_mri_surf2surf_matrix(s_subj, s_hemi, "inflated", subject)
-            np.save(source_subject + '/convert_' + subject + '.npy')
+            numpy.save(source_subject + '/convert_' + subject + '.npy')
 
     v = cortex.Vertex.empty(subject)
     hemi = v.left if hemisphere == "lh" else v.right
