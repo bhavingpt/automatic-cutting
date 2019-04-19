@@ -28,18 +28,21 @@ def generate(subject, hemisphere, points):
         if y.endswith("-" + hemisphere) and y != my_id and len(glob.glob(y + "/*.npy")) != 0:
             valid_subdirs.append(y)
 
+    print(valid_subdirs)
+
     if len(valid_subdirs) == 0: # if there are no other matching hemi dirs to line up with
         print(seams[0])
         utils.generate_npy_files(subject, hemisphere, seams, walls, points - 1, pts)
         return
 
     reference = valid_subdirs[0]
+    print('using ' + reference)
     reference_bases = []
     reference_walls = []
 
     if not os.path.exists(my_id + '/convert_' + reference.split("-")[0] + '.npz'):
         # we need to generate the transformation matrix
-        matrix = cortex.freesurfer.get_mri_surf2surf_matrix(subject, hemisphere, "inflated", subject)
+        matrix = cortex.freesurfer.get_mri_surf2surf_matrix(subject, hemisphere, "inflated", reference.split("-")[0])
         sparse.save_npz(my_id + '/convert_' + reference.split('-')[0] + '.npz', matrix)
 
     matrix = sparse.load_npz(my_id + '/convert_' + reference.split("-")[0] + '.npz')
