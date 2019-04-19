@@ -1,5 +1,5 @@
 from main import generate
-import sys
+import sys, os
 import cortex
 
 def hi(subj, hemi):
@@ -34,3 +34,13 @@ def com(subj, hemi, nums):
         obj[n] = 2
 
     return v
+
+if __name__ == "__main__":
+    # grab patch file from adele and vis it
+    command_one = ["scp", "-P", "26452", "bhavin@129.116.157.223:/usr/local/freesurfer/subjects/LW/surf/rh.autocut.patch", "."]
+    command_two = ["mv", "rh.autocut.patch", "$SUBJECTS_DIR/LW/surf/rh.autocut.patch.3d"]
+
+    os.system(" ".join(command_one))
+    os.system(" ".join(command_two))
+
+    cortex.freesurfer.show_surf("LW", "rh", "inflated", "autocut")
