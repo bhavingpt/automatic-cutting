@@ -6,6 +6,11 @@ This repository was created to automatically cut and flatten brains using previo
 
 ## Setup
 
+These steps are described below, but to get this working you should:
+  - create a .env file specifying SUBJECTS_DIR and FREESURFER_HOME
+  - have installed pycortex from source and change to the `fsaverage_transform` branch
+  - overwrite pycortex/cortex/blender/blendlib.py with save.txt
+
 ### Reference Directories
 
 The code works by storing past brains in reference directories at the root level - for example, the beginnings of three reference directories are included in this repo. It requires the naming scheme SJ-XH, where SJ is the subject and XH is right or left hemisphere. Each directory should also contain the output_seam.txt and output_wall.txt which specifies where Amanda's manual cuts were.
@@ -28,6 +33,12 @@ This repo exposes two functions in `main.py`:
 
 ## Generating reference dirs
 
+The function `utils.read_manual()` outputs the seams and walls, but these could be in any order. It's important that reference dirs have cuts in the same order, since the way autocutting is done is by averaging estimates of where intermediate points are in each reference brain.
+
+The code checks to see if there is already a reference dir and if so transforms points from one brain to the other to align the cuts. This was initially done by using `mri_surf2surf`, but now this is done using `cortex.freesurfer.get_mri_surf2surf_matrix`, which can be found in an updated branch of pycortex. This uses a transform matrix, which is generated once and written to the reference directory for future use.
+
 ## Autocutting
 
-## Other things
+The autocutting code works by parsing all the reference directories and figuring out which to use (must have the same number of intermediate points). It then writes out a patch file using `generate_patch()`, and flattens it using `mri_flatten`, which is a two-hour process.
+
+If the flattening fails, there are some helper methods in `vis.py` to look at the patch file and debug. If the flattening succeeds (!), the code in `distort.py` will generate graphs of areal and metric distortion.
