@@ -42,3 +42,12 @@ The code checks to see if there is already a reference dir and if so transforms 
 The autocutting code works by parsing all the reference directories and figuring out which to use (must have the same number of intermediate points). It then writes out a patch file using `generate_patch()`, and flattens it using `mri_flatten`, which is a two-hour process.
 
 If the flattening fails, there are some helper methods in `vis.py` to look at the patch file and debug. If the flattening succeeds (!), the code in `distort.py` will generate graphs of areal and metric distortion.
+
+## Visualizing result
+
+The output flattened file is `$SUBJECTS_DIR/LW/surf/rh.autocut.patch.flat`, but it should be copied to `$SUBJECTS_DIR/LW/surf/rh.autocut.flat.patch.3d` on whichever machine you want to visualize it on. After this:
+  - run `cortex.freesurfer.import_flat("LW", "autocut", hemis=['rh'], sname="LW2")`
+  - if you get path errors, just nuke `overlays.xvg` in the pycortex db and try it again
+  - Then run either 
+    - `cortex.webshow(cortex.Vertex.empty("LW2"), recache=True)` or 
+    - `cortex.webshow(cortex.Vertex.empty("LW2"), recache=True)`
