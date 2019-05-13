@@ -14,9 +14,11 @@ import multiprocessing
 
 from dotenv import load_dotenv
 
+# You need to populate SUBJECTS_DIR and FREESURFER_HOME
+# these can be set in a .env file
 load_dotenv()
 
-# regenerate the reference directory for a subject
+# this method generates the reference directory for subject/hemi with n intermediate points
 def generate(subject, hemisphere, points):
     my_id = subject + "-" + hemisphere
     seams, walls, pts = utils.read_manual(points - 1, subject, hemisphere)
@@ -214,6 +216,7 @@ def generate(subject, hemisphere, points):
 
 ############################################################
 
+# this method finds out how many intermediate points were used in an existing ref directory
 def calc_points(subject):
     for x in os.walk("./" + subject):
         files = [x for x in x[2] if x.endswith(".npy")]
@@ -227,6 +230,7 @@ def calc_points(subject):
 
     return -1 if min_val < 3 else min_val
 
+# this method reads an existing reference directory
 def parse_reference(subject, hemi):
     my_id = subject + "-" + hemi
     for x in os.walk("."):
@@ -250,6 +254,7 @@ def parse_reference(subject, hemi):
 
     return subjects, points
 
+# this method converts points from one subject to another
 def find_match(target_subject, surface, subjects, pts, target_file):
     estimates = []
 
@@ -315,8 +320,8 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
             else:
                 f.write(struct.pack('>i3f', i+1, *pt))
 
-    # TODO this patch file is messed up... let's stop here
-    exit(0)
+    # The patch file for the brain has been written out - if the flattening fails,
+    # you can stop here and visualize it using vis.py
 
     inpath = patch_filepath
     outpath = inpath + ".flat"
@@ -334,6 +339,7 @@ def generate_patch(surface, subject, hemisphere, subj_pts, intermeds, mwall_edge
 
 ############################################################
 
+# this method does autocutting
 def autocut(subject, hemisphere):
     subjects, points = parse_reference(subject, hemisphere)
     print("Found subjects - " + str(subjects))
@@ -359,8 +365,8 @@ def autocut(subject, hemisphere):
     for idx, base in enumerate(todos):
         segment = []
         for i in range(0, points):
-            val = find_match(subject, surface, subjects, pts, base + str(i) + ".npy")
-            segment.append(val)
+           val = find_match(subject, surface, subjects, pts, base + str(i) + ".npy")
+           segment.append(val)
         segments.append(segment)
 
     for i in range(6, 10): # edit one: make sure that the medial wall is continous
@@ -398,10 +404,6 @@ def autocut(subject, hemisphere):
             hemi[i] = 2
         for i in seam:
             hemi[i] = 3
-
-    return v
-
-    cortex.webshow(v, open_browser=False)
 
     generate_patch(surface, subject, hemisphere, pts, points, mwall_edge, seam, smore)
 
