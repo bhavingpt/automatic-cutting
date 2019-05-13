@@ -1,4 +1,4 @@
-# automatic-cutting
+# Autocut
 
 ## Purpose
 
