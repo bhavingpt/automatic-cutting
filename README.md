@@ -6,7 +6,7 @@ This repository was created to automatically cut and flatten brains using previo
 
 ## Usage
 
-To use this work for academic purposes, please reach out to Dr Alex Huth at huth@cs.utexas.edu. This work is not licensed for anything commercial.
+To use this work for academic purposes, please reach out to Dr Alex Huth at huth@cs.utexas.edu.
 
 ## Setup
 
