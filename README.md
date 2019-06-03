@@ -2,7 +2,11 @@
 
 ## Purpose
 
-This repository was created to automatically cut and flatten brains using previously cut brains as a reference. You can reach out to Bhavin with any questions (on messenger, or bhavingpt@gmail.com)!
+This repository was created to automatically cut and flatten brains using previously cut brains as a reference.
+
+## Usage
+
+To use this work for academic purposes, please reach out to Dr Alex Huth at huth@cs.utexas.edu. This work is not licensed for anything commercial.
 
 ## Setup
 
